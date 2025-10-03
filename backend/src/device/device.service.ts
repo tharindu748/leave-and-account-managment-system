@@ -1,6 +1,3 @@
-// src/device/device-config.service.ts (no changes needed here)
-// The existing DeviceConfigService is perfect as-is
-
 // src/device/device.service.ts
 import {
   BadGatewayException,
