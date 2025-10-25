@@ -1,118 +1,341 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from 'src/database/database.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { Prisma, User } from '@prisma/client';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
 import { CreateRegUserDto, UpdateRegUserDto } from './dto/users.dto';
-import * as bcrypt from 'bcrypt';
-import DigestFetch from 'digest-fetch';
-
-type DeleteResult = {
-  device: string;
-  ok: boolean;
-  status?: number;
-  url?: string;
-  attempt: 'UserInfo/Delete' | 'UserInfoDetail/Delete';
-  responseText?: string;
-};
 
 @Injectable()
 export class UsersService {
-  private readonly SALT_ROUNDS = 10;
-  constructor(private databaseService: DatabaseService) {}
+  constructor(private readonly db: DatabaseService) {}
 
-  // new 2
-  private readonly user = process.env.HIK_USER ?? 'admin';
-  private readonly pass = process.env.HIK_PASS ?? '';
-  private readonly scheme = (process.env.HIK_HTTP_SCHEME ?? 'http') as
-    | 'http'
-    | 'https';
-  private readonly port = Number(
-    process.env.HIK_PORT ?? (this.scheme === 'https' ? 443 : 80),
-  );
-  private readonly rejectTLS =
-    (process.env.HIK_TLS_REJECT_UNAUTHORIZED ?? 'false') === 'true';
-
-  async findUserByEmail(email: string): Promise<User | null> {
-    return this.databaseService.user.findUnique({
-      where: { email },
-    });
-  }
-
-  async findUserById(id: number): Promise<User | null> {
-    return this.databaseService.user.findUnique({
-      where: { id },
-    });
-  }
-
-  async findUserByEmployeeId(employeeId: string): Promise<User | null> {
-    return this.databaseService.user.findUnique({
-      where: { employeeId },
-    });
-  }
-
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    return this.databaseService.user.create({
-      data: {
-        name: createUserDto.name,
-        email: createUserDto.email,
-        password: createUserDto.password,
-      },
-    });
-  }
-
-  async update(id: number, data: Prisma.UserUpdateInput): Promise<User> {
-    return this.databaseService.user.update({
-      where: { id },
-      data,
-    });
-  }
-
-  // new
   async listUsers() {
-    return this.databaseService.user.findMany({
-      orderBy: { name: 'asc' },
+    console.log('📋 [Service] Listing all users');
+    try {
+      const users = await this.db.user.findMany({
+        where: { active: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          employeeId: true,
+          epfNo: true,
+          nic: true,
+          jobPosition: true,
+          imagePath: true,
+          joinDate: true, // ✅ Now included
+          address: true, // ✅ Now included
+          active: true,
+          createdAt: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+      console.log(`✅ [Service] Found ${users.length} users`);
+      return users;
+    } catch (error) {
+      console.error('❌ [Service] Error listing users:', error);
+      throw error;
+    }
+  }
+
+  async findUserById(id: number) {
+    console.log('🔧 [Service] Finding user by ID:', id);
+    try {
+      const user = await this.db.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          employeeId: true,
+          epfNo: true,
+          nic: true,
+          jobPosition: true,
+          imagePath: true,
+          joinDate: true, // ✅ Now included
+          address: true, // ✅ Now included
+          active: true,
+          createdAt: true,
+          updatedAt: true,
+          isAdmin: true, // ✅ For auth service
+          refreshToken: true, // ✅ For auth service
+        }
+      });
+
+      if (!user) {
+        console.warn('⚠️ [Service] User not found with ID:', id);
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      console.log('✅ [Service] User found by ID:', { id: user.id, name: user.name });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error finding user by ID:', error);
+      throw error;
+    }
+  }
+
+  async findUserByEmail(email: string) {
+    console.log('🔧 [Service] Finding user by email:', email);
+    try {
+      const user = await this.db.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          password: true,
+          employeeId: true,
+          epfNo: true,
+          nic: true,
+          jobPosition: true,
+          imagePath: true,
+          joinDate: true, // ✅ Now included
+          address: true, // ✅ Now included
+          active: true,
+          isAdmin: true, // ✅ For auth service
+          refreshToken: true, // ✅ For auth service
+        }
+      });
+
+      if (!user) {
+        console.warn('⚠️ [Service] User not found with email:', email);
+        return null;
+      }
+
+      console.log('✅ [Service] User found by email:', { id: user.id, name: user.name });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error finding user by email:', error);
+      throw error;
+    }
+  }
+
+  async create(createUserDto: any) {
+    console.log('🔧 [Service] Creating new user');
+    console.log('📝 [Service] Create data:', createUserDto);
+    try {
+      const user = await this.db.user.create({
+        data: createUserDto,
+      });
+      console.log('✅ [Service] User created successfully:', { id: user.id, name: user.name });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error creating user:', error);
+      
+      if (error.code === 'P2002') {
+        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      }
+      
+      throw error;
+    }
+  }
+
+  async update(id: number, updateData: any) {
+    console.log('🔧 [Service] Updating user:', id);
+    console.log('📝 [Service] Update data:', updateData);
+    try {
+      const user = await this.db.user.update({
+        where: { id },
+        data: updateData,
+      });
+      console.log('✅ [Service] User updated successfully:', { id: user.id, name: user.name });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error updating user:', error);
+      
+      if (error.code === 'P2025') {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      
+      throw error;
+    }
+  }
+
+  async updateRegUserById(id: number, updateData: UpdateRegUserDto) {
+    console.log('🔧 [Service] Updating user by ID:', id);
+    console.log('🔧 [Service] Update data:', updateData);
+
+    try {
+      // Check if user exists
+      const user = await this.db.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        console.warn('⚠️ [Service] User not found with ID:', id);
+        throw new HttpException(`User with ID ${id} not found`, HttpStatus.NOT_FOUND);
+      }
+
+      console.log('🔧 [Service] Found user:', { id: user.id, name: user.name });
+
+      // Clean up empty strings to null and handle dates
+      const cleanedData = this.cleanUpdateData(updateData);
+
+      // Update user
+      const updatedUser = await this.db.user.update({
+        where: { id },
+        data: cleanedData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          employeeId: true,
+          epfNo: true,
+          nic: true,
+          jobPosition: true,
+          imagePath: true,
+          joinDate: true, // ✅ Now included
+          address: true, // ✅ Now included
+          active: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      });
+
+      console.log('✅ [Service] User updated successfully:', { 
+        id: updatedUser.id, 
+        name: updatedUser.name 
+      });
+      return updatedUser;
+    } catch (error) {
+      console.error('❌ [Service] Error updating user by ID:', error);
+      
+      // Handle specific Prisma errors
+      if (error.code === 'P2025') {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      if (error.code === 'P2002') {
+        throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+      }
+      
+      throw error;
+    }
+  }
+
+  private cleanUpdateData(updateData: UpdateRegUserDto): any {
+    const cleaned: any = { ...updateData };
+    
+    // Convert empty strings to null for optional fields
+    const optionalFields = [
+      'email', 'epfNo', 'nic', 'jobPosition', 
+      'imagePath', 'cardNumber', 'address' // ✅ Now includes address
+    ];
+    
+    optionalFields.forEach(field => {
+      if (cleaned[field] === '') {
+        cleaned[field] = null;
+      }
     });
+
+    // Handle date fields
+    if (cleaned.joinDate !== undefined && cleaned.joinDate !== null && cleaned.joinDate !== '') {
+      cleaned.joinDate = new Date(cleaned.joinDate);
+    } else if (cleaned.joinDate === '') {
+      cleaned.joinDate = null;
+    }
+
+    if (cleaned.validFrom !== undefined && cleaned.validFrom !== null && cleaned.validFrom !== '') {
+      cleaned.validFrom = new Date(cleaned.validFrom);
+    } else if (cleaned.validFrom === '') {
+      cleaned.validFrom = null;
+    }
+
+    if (cleaned.validTo !== undefined && cleaned.validTo !== null && cleaned.validTo !== '') {
+      cleaned.validTo = new Date(cleaned.validTo);
+    } else if (cleaned.validTo === '') {
+      cleaned.validTo = null;
+    }
+
+    console.log('🧹 [Service] Cleaned update data:', cleaned);
+    return cleaned;
   }
 
   async upsertRegUser(dto: CreateRegUserDto) {
-    const validFrom = dto.validFrom ? new Date(dto.validFrom) : undefined;
-    const validTo = dto.validTo ? new Date(dto.validTo) : undefined;
-
-    const password = 'password123';
-    const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
-
-    const user = await this.databaseService.user.upsert({
-      where: { employeeId: dto.employeeId },
-      update: {
-        name: dto.name,
-        cardNumber: dto.cardNumber,
-        validFrom,
-        validTo,
-        epfNo: dto.epfNo,
-        nic: dto.nic,
-        jobPosition: dto.jobPosition,
-      },
-      create: {
+    console.log('🔧 [Service] Upserting user with employeeId:', dto.employeeId);
+    try {
+      // Create a complete user data object with required fields
+      const userData: any = {
         employeeId: dto.employeeId,
         name: dto.name,
+        email: dto.employeeId + '@company.com',
+        password: dto.password || 'defaultPassword',
         cardNumber: dto.cardNumber,
-        validFrom,
-        validTo,
+        validFrom: dto.validFrom ? new Date(dto.validFrom) : null,
+        validTo: dto.validTo ? new Date(dto.validTo) : null,
         epfNo: dto.epfNo,
         nic: dto.nic,
         jobPosition: dto.jobPosition,
-        email: `${dto.employeeId}@placeholder.local`,
-        password: hashedPassword,
-      },
-    });
+        joinDate: dto.joinDate ? new Date(dto.joinDate) : null, // ✅ Now included
+        address: dto.address || null, // ✅ Now included
+      };
 
-    return user;
+      const user = await this.db.user.upsert({
+        where: { employeeId: dto.employeeId },
+        update: userData,
+        create: userData,
+      });
+      
+      console.log('✅ [Service] User upserted successfully:', { id: user.id, name: user.name });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error upserting user:', error);
+      throw error;
+    }
   }
 
-  async updateRegUserFields(employeeId: string, dto: UpdateRegUserDto) {
-    return this.databaseService.user.update({
-      where: { employeeId },
-      data: dto,
-    });
+  async findUserByEmployeeId(employeeId: string) {
+    console.log('🔧 [Service] Finding user by employeeId:', employeeId);
+    try {
+      const user = await this.db.user.findUnique({
+        where: { employeeId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          employeeId: true,
+          epfNo: true,
+          nic: true,
+          jobPosition: true,
+          imagePath: true,
+          joinDate: true, // ✅ Now included
+          address: true, // ✅ Now included
+          active: true,
+        }
+      });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error finding user by employeeId:', error);
+      throw error;
+    }
+  }
+
+  async updateRegUserFields(employeeId: string, updateData: UpdateRegUserDto) {
+    console.log('🔧 [Service] Updating user by employeeId:', employeeId);
+    try {
+      // Clean up the data first
+      const cleanedData = this.cleanUpdateData(updateData);
+      
+      const user = await this.db.user.update({
+        where: { employeeId },
+        data: cleanedData,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          employeeId: true,
+          epfNo: true,
+          nic: true,
+          jobPosition: true,
+          imagePath: true,
+          joinDate: true, // ✅ Now included
+          address: true, // ✅ Now included
+          active: true,
+        }
+      });
+      
+      console.log('✅ [Service] User updated by employeeId:', { id: user.id, name: user.name });
+      return user;
+    } catch (error) {
+      console.error('❌ [Service] Error updating user by employeeId:', error);
+      throw error;
+    }
   }
 }

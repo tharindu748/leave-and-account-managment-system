@@ -1,0 +1,315 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AnalyticService = void 0;
+const common_1 = require("@nestjs/common");
+const database_service_1 = require("../database/database.service");
+let AnalyticService = class AnalyticService {
+    database;
+    constructor(database) {
+        this.database = database;
+    }
+    async getEmployeeWorkSummary(params) {
+        const { start, end, employeeId } = params;
+        const { startDate, endDateExclusive } = this.resolveDateRange(start, end);
+        const latestConfig = await this.database.attendanceConfig.findFirst({
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+        });
+        const workStartSeconds = this.timeOfDayToSeconds(latestConfig?.workStart ?? new Date(2000, 0, 1, 9, 0, 0));
+        const users = await this.database.user.findMany({
+            where: {
+                active: true,
+                employeeId: { not: null },
+                ...(employeeId ? { employeeId } : {}),
+            },
+            select: { id: true, name: true, employeeId: true },
+            orderBy: { id: 'asc' },
+        });
+        if (users.length === 0) {
+            return [];
+        }
+        const allEmployeeIds = users
+            .map((u) => u.employeeId)
+            .filter((v) => Boolean(v));
+        const attendance = await this.database.attendanceDay.findMany({
+            where: {
+                employeeId: { in: allEmployeeIds },
+                workDate: {
+                    gte: startDate,
+                    lt: endDateExclusive,
+                },
+            },
+            select: {
+                employeeId: true,
+                workDate: true,
+                firstIn: true,
+                workedSeconds: true,
+            },
+        });
+        const byEmp = {};
+        for (const row of attendance) {
+            if (!byEmp[row.employeeId])
+                byEmp[row.employeeId] = [];
+            byEmp[row.employeeId].push(row);
+        }
+        const summary = users.map((u) => {
+            const rows = u.employeeId ? (byEmp[u.employeeId] ?? []) : [];
+            const workingDays = rows.reduce((acc, r) => acc + (r.workedSeconds > 0 ? 1 : 0), 0);
+            const late = rows.reduce((acc, r) => {
+                const fi = (r.firstIn ?? '').trim();
+                if (!fi)
+                    return acc;
+                const firstInSeconds = this.parseClockStringToSeconds(fi);
+                return acc + (firstInSeconds > workStartSeconds ? 1 : 0);
+            }, 0);
+            return {
+                id: u.id,
+                name: u.name,
+                late,
+                workingDays,
+            };
+        });
+        return summary;
+    }
+    async getMostLateEmployees(params) {
+        const { start, end, limit } = params;
+        let summary = await this.getEmployeeWorkSummary({ start, end });
+        summary = summary.filter((s) => s.workingDays > 0);
+        summary = summary.sort((a, b) => b.late - a.late || a.workingDays - b.workingDays || a.id - b.id);
+        const lim = limit ?? 5;
+        return summary.slice(0, lim);
+    }
+    async getLeastLateEmployees(params) {
+        const { start, end, limit } = params;
+        let summary = await this.getEmployeeWorkSummary({ start, end });
+        summary = summary.filter((s) => s.workingDays > 0);
+        summary = summary.sort((a, b) => a.late - b.late || b.workingDays - a.workingDays || a.id - b.id);
+        const lim = limit ?? 5;
+        return summary.slice(0, lim);
+    }
+    parseClockStringToSeconds(clock) {
+        const parts = clock.split(':').map((p) => p.trim());
+        if (parts.length < 2 || parts.length > 3)
+            return 0;
+        const [hStr, mStr, sStr] = parts;
+        const h = Number(hStr);
+        const m = Number(mStr);
+        const s = sStr !== undefined ? Number(sStr) : 0;
+        if (Number.isNaN(h) ||
+            Number.isNaN(m) ||
+            Number.isNaN(s) ||
+            h < 0 ||
+            h > 23 ||
+            m < 0 ||
+            m > 59 ||
+            s < 0 ||
+            s > 59)
+            return 0;
+        return h * 3600 + m * 60 + s;
+    }
+    timeOfDayToSeconds(d) {
+        return d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    }
+    resolveDateRange(start, end) {
+        const now = new Date();
+        let startDate;
+        let endDateInclusive;
+        if (start) {
+            startDate = new Date(start + 'T00:00:00');
+        }
+        else {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        }
+        if (end) {
+            endDateInclusive = new Date(end + 'T00:00:00');
+        }
+        else {
+            endDateInclusive = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+        }
+        const endDateExclusive = new Date(endDateInclusive);
+        endDateExclusive.setDate(endDateExclusive.getDate() + 1);
+        return { startDate, endDateExclusive };
+    }
+    async getDailySummary(dateStr) {
+        const start = new Date(`${dateStr}T00:00:00.000Z`);
+        const end = new Date(`${dateStr}T00:00:00.000Z`);
+        end.setUTCDate(end.getUTCDate() + 1);
+        const activeEmployees = await this.database.user.findMany({
+            where: { active: true, employeeId: { not: null } },
+            select: { employeeId: true },
+        });
+        const totalActive = activeEmployees.length;
+        const activeEmployeeIds = new Set(activeEmployees.map((u) => u.employeeId));
+        if (totalActive === 0) {
+            return [
+                { title: 'Present', percentage: 0, count: 0 },
+                { title: 'Absent', percentage: 0, count: 0 },
+                { title: 'On Time', percentage: 0, count: 0 },
+                { title: 'Late', percentage: 0, count: 0 },
+            ];
+        }
+        const latestConfig = await this.database.attendanceConfig.findFirst({
+            orderBy: { createdAt: 'desc' },
+        });
+        if (!latestConfig) {
+            throw new Error('No AttendanceConfig found. Please create one.');
+        }
+        const workStartOnDay = this.applyTimeOfDay(dateStr, latestConfig.workStart);
+        const firstIns = await this.database.$queryRawUnsafe(`
+        SELECT
+          employee_id AS "employeeId",
+          MIN(COALESCE(correct_event_time, event_time)) AS "firstIn"
+        FROM punches
+        WHERE direction = 'IN'
+          AND COALESCE(correct_event_time, event_time) >= $1
+          AND COALESCE(correct_event_time, event_time) <  $2
+        GROUP BY employee_id
+      `, start, end);
+        const presentMap = new Map();
+        for (const row of firstIns) {
+            if (activeEmployeeIds.has(row.employeeId)) {
+                presentMap.set(row.employeeId, new Date(row.firstIn));
+            }
+        }
+        const presentCount = presentMap.size;
+        const absentCount = totalActive - presentCount;
+        let onTimeCount = 0;
+        for (const [_emp, firstIn] of presentMap) {
+            if (firstIn <= workStartOnDay)
+                onTimeCount++;
+        }
+        const lateCount = presentCount - onTimeCount;
+        const pct = (n) => Math.round((n * 100 * 100) / totalActive) / 100;
+        const result = [
+            {
+                title: 'Present',
+                percentage: Math.round(pct(presentCount)),
+                count: presentCount,
+            },
+            {
+                title: 'Absent',
+                percentage: Math.round(pct(absentCount)),
+                count: absentCount,
+            },
+            {
+                title: 'On Time',
+                percentage: Math.round(pct(onTimeCount)),
+                count: onTimeCount,
+            },
+            {
+                title: 'Late',
+                percentage: Math.round(pct(lateCount)),
+                count: lateCount,
+            },
+        ];
+        return result;
+    }
+    applyTimeOfDay(dateStr, timeSource) {
+        const hours = timeSource.getUTCHours();
+        const minutes = timeSource.getUTCMinutes();
+        const seconds = timeSource.getUTCSeconds();
+        const ms = timeSource.getUTCMilliseconds();
+        const d = new Date(`${dateStr}T00:00:00.000Z`);
+        d.setUTCHours(hours, minutes, seconds, ms);
+        return d;
+    }
+    async getEmployeeDashboardData(employeeId) {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const user = await this.database.user.findUnique({
+            where: { employeeId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                jobPosition: true,
+                epfNo: true,
+                createdAt: true,
+                imagePath: true,
+                cardNumber: true,
+                leaveRequests: {
+                    where: {
+                        status: 'APPROVED',
+                    },
+                    select: {
+                        leaveType: true,
+                        dates: {
+                            select: {
+                                isHalfDay: true,
+                            },
+                        },
+                    },
+                },
+                leaveBalances: {
+                    where: { year: now.getFullYear() },
+                    select: {
+                        leaveType: true,
+                        balance: true,
+                    },
+                },
+                attendanceDays: {
+                    where: {
+                        workDate: {
+                            gte: startOfMonth,
+                            lt: new Date(now.getFullYear(), now.getMonth() + 1, 0),
+                        },
+                    },
+                    select: {
+                        workedSeconds: true,
+                    },
+                },
+            },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('User not found');
+        }
+        const workedSinceJoining = Math.floor((now.getTime() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24));
+        const leaveTaken = user.leaveRequests.reduce((acc, request) => {
+            const leaveDays = request.dates.reduce((sum, date) => sum + (date.isHalfDay ? 0.5 : 1), 0);
+            if (request.leaveType === 'ANNUAL') {
+                acc.annual += leaveDays;
+            }
+            else if (request.leaveType === 'CASUAL') {
+                acc.sick += leaveDays;
+            }
+            return acc;
+        }, { sick: 0, annual: 0 });
+        const leaveBalances = user.leaveBalances.reduce((acc, balance) => {
+            acc[balance.leaveType.toLocaleLowerCase()] = balance.balance;
+            return acc;
+        }, { annual: 0, casual: 0 });
+        const totalLeaveCount = leaveBalances.annual + leaveBalances.casual;
+        const remainingHolidays = totalLeaveCount - (leaveTaken.annual + leaveTaken.sick);
+        const totalWorkedSeconds = user.attendanceDays.reduce((acc, day) => acc + day.workedSeconds, 0);
+        const workHoursThisMonth = Math.round(totalWorkedSeconds / 3600);
+        const employeeData = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            epfNo: user.epfNo,
+            position: user.jobPosition,
+            image: user.imagePath,
+            workedSinceJoining,
+            totalLeaveCount,
+            leaveTaken,
+            leaveBalances,
+            remainingHolidays,
+            workHoursThisMonth,
+        };
+        return employeeData;
+    }
+};
+exports.AnalyticService = AnalyticService;
+exports.AnalyticService = AnalyticService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [database_service_1.DatabaseService])
+], AnalyticService);
+//# sourceMappingURL=analytic.service.js.map

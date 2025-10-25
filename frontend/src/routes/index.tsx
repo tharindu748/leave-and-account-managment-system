@@ -15,6 +15,8 @@ import LeaveManagementPage from "@/features/Attendance/page/leave-manage-page";
 import UserPunchesPage from "@/features/Activities/pages/user-punches";
 import TimeCalcPage from "@/features/Attendance/page/times-calc-page";
 import LeavePolicyPage from "@/features/settings/pages/leave-policy-page";
+import EmployeesSalary from "@/components/salary/EmployeesSalary";
+import SalaryGeneration from "@/components/salary/SalaryGeneration";
 
 const AppRoutes = () => {
   return (
@@ -40,7 +42,10 @@ const AppRoutes = () => {
           <Route path="/users1" element={<UsersPage1 />} />
           <Route path="/time-config" element={<TimeConfigPage />} />
           <Route path="/leave-policy" element={<LeavePolicyPage />} />
-        </Route>
+
+          <Route path="/salary/employees" element={<EmployeesSalary />} />
+          <Route path="/salary/EmployeesSalary" element={<SalaryGeneration/>}   />
+      </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />

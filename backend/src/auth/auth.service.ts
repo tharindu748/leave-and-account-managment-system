@@ -21,7 +21,7 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResultDto> {
-    const { name, password, email } = registerDto;
+    const { name, password, email, isAdmin } = registerDto;
 
     const existingUser = await this.usersService.findUserByEmail(email);
 
@@ -35,7 +35,7 @@ export class AuthService {
       name,
       email,
       password: hashedPassword,
-      isAdmin: true,
+      isAdmin: isAdmin || false,
     };
 
     const user = await this.usersService.create(createUserDto);
@@ -56,6 +56,7 @@ export class AuthService {
       email: user.email,
       isAdmin: user.isAdmin,
       employeeId: user.employeeId,
+    
     };
   }
 
@@ -89,7 +90,7 @@ export class AuthService {
     name: string;
     email: string;
     isAdmin: boolean;
-    employeeId: string;
+    employeeId: string | null;
   }): Promise<AuthResultDto> {
     const tokens = await this.getTokens(
       user.userId,
@@ -150,6 +151,11 @@ export class AuthService {
   }
 
   async updateRefreshToken(userId: number, refreshToken: string) {
+    if (!refreshToken) {
+      await this.usersService.update(userId, { refreshToken: null });
+      return;
+    }
+
     const hashedRefreshToken = await bcrypt.hash(
       refreshToken,
       this.SALT_ROUNDS,

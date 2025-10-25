@@ -44,6 +44,27 @@ export class LeaveController {
     return this.leaveService.findLeaveRequests(parsedId);
   }
 
+  // Calendar endpoint
+  @Get('calendar')
+  async getCalendarData(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    const currentDate = new Date();
+    const yearNum = year ? parseInt(year) : currentDate.getFullYear();
+    const monthNum = month ? parseInt(month) : currentDate.getMonth() + 1;
+    
+    if (isNaN(yearNum) || isNaN(monthNum)) {
+      throw new BadRequestException('Invalid year or month parameters');
+    }
+
+    if (monthNum < 1 || monthNum > 12) {
+      throw new BadRequestException('Month must be between 1 and 12');
+    }
+
+    return this.leaveService.getCalendarData(yearNum, monthNum);
+  }
+
   @Get('balance/:userId/:year/:leaveType')
   async getLeaveBalance(
     @Param('userId', ParseIntPipe) userId: number,
@@ -59,7 +80,7 @@ export class LeaveController {
     return this.leaveService.approveLeaveRequest(data);
   }
 
-  @Post('cancel')
+  @Post('rejected')
   @HttpCode(HttpStatus.OK)
   async cancelLeaveRequest(@Body() data: CancelLeaveRequestDto) {
     return this.leaveService.cancelLeaveRequest(data);
@@ -76,5 +97,11 @@ export class LeaveController {
       data.leaveType,
       data.defaultBalance,
     );
+  }
+
+  // Test endpoint
+  @Get('test')
+  async testEndpoint() {
+    return this.leaveService.testEndpoint();
   }
 }

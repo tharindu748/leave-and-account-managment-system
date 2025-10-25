@@ -19,6 +19,7 @@ import {
   Activity,
   UserCheck,
   User,
+  Banknote, 
   Settings,
 } from "lucide-react";
 import { Link } from "react-router";
@@ -91,6 +92,7 @@ const items: MenuItem[] = [
       },
     ],
   },
+ 
   {
     title: "User Management",
     icon: User,
@@ -102,6 +104,18 @@ const items: MenuItem[] = [
         url: "/users1",
         visibleFor: "admin",
       },
+    ],
+  },
+ {
+    title: "Salary",
+    icon: Banknote,
+    url: "#",
+    visibleFor: "admin",
+    items: [
+      { title: "Employee Salaries", url: "/salary/employees", visibleFor: "admin" },
+      { title: "Generate Salary", url: "/salary/EmployeesSalary", visibleFor: "admin" },
+      { title: "Payslips", url: "/salary/payslips", visibleFor: "admin" },
+      { title: "Salary Reports", url: "/salary/reports", visibleFor: "admin" },
     ],
   },
   {

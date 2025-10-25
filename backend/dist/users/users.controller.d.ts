@@ -1,0 +1,143 @@
+import { File as MulterFile } from 'multer';
+import { UsersService } from './users.service';
+import { CreateRegUserDto, UpdateRegUserDto } from './dto/users.dto';
+export declare class UsersController {
+    private readonly usersService;
+    constructor(usersService: UsersService);
+    findAll(): Promise<{
+        employeeId: string | null;
+        name: string;
+        epfNo: string | null;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        createdAt: Date;
+        active: boolean;
+    }[]>;
+    findOne(id: number): Promise<{
+        employeeId: string | null;
+        name: string;
+        epfNo: string | null;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        isAdmin: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        refreshToken: string | null;
+        active: boolean;
+    }>;
+    create(dto: CreateRegUserDto): Promise<{
+        employeeId: string | null;
+        name: string;
+        cardNumber: string | null;
+        validFrom: Date | null;
+        validTo: Date | null;
+        epfNo: string | null;
+        password: string;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        isAdmin: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        refreshToken: string | null;
+        active: boolean;
+    }>;
+    update(id: number, dto: UpdateRegUserDto, file: MulterFile): Promise<{
+        employeeId: string | null;
+        name: string;
+        epfNo: string | null;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        active: boolean;
+    }>;
+    updateSimple(id: number, dto: UpdateRegUserDto): Promise<{
+        employeeId: string | null;
+        name: string;
+        epfNo: string | null;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        active: boolean;
+    }>;
+    findByEmployeeId(employeeId: string): Promise<{
+        employeeId: string | null;
+        name: string;
+        epfNo: string | null;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        active: boolean;
+    } | null>;
+    updateByEmployeeId(employeeId: string, dto: UpdateRegUserDto): Promise<{
+        employeeId: string | null;
+        name: string;
+        epfNo: string | null;
+        nic: string | null;
+        jobPosition: string | null;
+        joinDate: Date | null;
+        address: string | null;
+        email: string;
+        imagePath: string | null;
+        id: number;
+        active: boolean;
+    }>;
+    testFields(id: number, testData: {
+        joinDate?: string;
+        address?: string;
+    }): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            employeeId: string | null;
+            name: string;
+            epfNo: string | null;
+            nic: string | null;
+            jobPosition: string | null;
+            joinDate: Date | null;
+            address: string | null;
+            email: string;
+            imagePath: string | null;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            active: boolean;
+        };
+        error?: undefined;
+    } | {
+        success: boolean;
+        message: any;
+        error: any;
+        data?: undefined;
+    }>;
+}

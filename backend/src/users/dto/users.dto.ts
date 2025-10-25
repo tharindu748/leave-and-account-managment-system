@@ -35,6 +35,15 @@ export class CreateRegUserDto {
   @IsOptional()
   @IsString()
   jobPosition?: string;
+
+  // ✅ ADD THESE
+  @IsOptional()
+  @IsISO8601({}, { message: 'joinDate must be a valid ISO date string' })
+  joinDate?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
 }
 
 export class UpdateRegUserDto {
@@ -73,4 +82,13 @@ export class UpdateRegUserDto {
   @IsOptional()
   @IsString()
   imagePath?: string;
+
+  // ✅ ADD THESE NEW FIELDS
+  @IsOptional()
+  @IsISO8601({}, { message: 'joinDate must be a valid ISO date string' })
+  joinDate?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
 }

@@ -191,7 +191,7 @@ export class AttendanceService {
         p.direction,
         p.source,
       ]);
-      const hasManualPunch = rawEvents.some(([, , s]) => s === Source.manual);
+      const hasManualPunch = rawEvents.some(([, , s]) => s === Source.manual);//////my change
       const [normEvents, adjusted1] = this.normalizeSequence(rawEvents);
       const [periods, adjusted2] = this.buildPeriods(normEvents, d, otEnd);
       hadManualFlag = hasManualPunch || adjusted1 || adjusted2;

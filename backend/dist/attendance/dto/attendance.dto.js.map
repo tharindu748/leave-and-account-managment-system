@@ -1,0 +1,1 @@
+{"version":3,"file":"attendance.dto.js","sourceRoot":"","sources":["../../../src/attendance/dto/attendance.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAAoD;AAEpD,MAAa,sBAAsB;IAEjC,UAAU,CAAS;IAMnB,QAAQ,CAAS;CAClB;AATD,wDASC;AAPC;IADC,IAAA,0BAAQ,GAAE;;0DACQ;AAMnB;IAJC,IAAA,0BAAQ,GAAE;IACV,IAAA,yBAAO,EAAC,qBAAqB,EAAE;QAC9B,OAAO,EAAE,2CAA2C;KACrD,CAAC;;wDACe"}

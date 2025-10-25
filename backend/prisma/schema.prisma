@@ -26,6 +26,10 @@ model User {
   imagePath          String?
   active             Boolean              @default(true)
 
+    // ✅ ADD THESE MISSING FIELDS
+  joinDate           DateTime?           @map("join_date")
+  address            String?
+
   leaveRequests    Leave_request[] @relation("UserLeaveRequests")
   approvedRequests Leave_request[] @relation("ApprovedRequests")
 
@@ -33,7 +37,13 @@ model User {
   punches            Punch[]
   attendanceDays     AttendanceDay[]
 
+  salaryConfigs    SalaryConfig[]
+  salaryRecords    SalaryRecord[]
+
+
   @@map("users")
+  // SalaryConfig SalaryConfig[]
+  // SalaryRecord SalaryRecord[]
 }
 
 model Leave_request {
@@ -43,6 +53,7 @@ model Leave_request {
   leaveType   LeaveType
   status      LeaveStatus?         @default(PENDING)
   reason      String?
+  // department  String?
   requestedAt DateTime             @default(now())
   approvedAt  DateTime?
   rejectedAt  DateTime?
@@ -199,4 +210,37 @@ enum AttendanceStatus {
   ABSENT
   PARTIAL
   MANUAL
+}
+/////// i add
+
+// In schema.prisma - add otRate to SalaryConfig if needed
+model SalaryConfig {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  basicSalary  Float
+  otRate       Float?   @default(0)  // Add this line if you want to store OT rate
+  allowance    Float?   @default(0)
+  deduction    Float?   @default(0)
+  effectiveFrom DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("salary_config")
+}
+
+model SalaryRecord {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  month       Int
+  year        Int
+  basicSalary Float
+  totalLeave  Int       @default(0)
+  leaveDeductions Float @default(0)
+  overtimePay Float     @default(0)
+  netSalary   Float
+  generatedAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, year])
+  @@map("salary_records")
 }

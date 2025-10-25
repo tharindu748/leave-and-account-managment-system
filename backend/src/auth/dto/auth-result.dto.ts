@@ -6,4 +6,5 @@ export class AuthResultDto {
   email: string;
   isAdmin: boolean;
   employeeId: string | null;
+  // imagePath: string | null;
 }

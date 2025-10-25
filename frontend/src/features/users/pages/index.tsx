@@ -10,6 +10,8 @@ import EditUserDialog from "../components/edit-user-dialog";
 import { toast } from "sonner";
 
 export type User = {
+  joinDate(joinDate: any): string | undefined;
+  address: string;
   id: string;
   name: string;
   email?: string;
