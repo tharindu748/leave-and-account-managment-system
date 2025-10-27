@@ -36,7 +36,7 @@ export default function EmployeesSalary() {
         console.log('🔄 [Frontend] Starting to fetch employees from API...');
         
         // ✅ Temporary fix: Use direct backend URL
-        const res = await axios.get("http://localhost:3000/salary/employees");
+        const res = await axios.get("https://leave-and-account-managment-system.onrender.com/salary/employees");
         
         console.log('📨 [Frontend] Full API Response:', res);
         console.log('📊 [Frontend] Response data:', res.data);
