@@ -4,6 +4,9 @@ import { CreateRegUserDto, UpdateRegUserDto } from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
+  deleteUserById(id: number) {
+    throw new Error('Method not implemented.');
+  }
   constructor(private readonly db: DatabaseService) {}
 
   async listUsers() {
@@ -145,6 +148,21 @@ export class UsersService {
         throw new HttpException('User not found', HttpStatus.NOT_FOUND);
       }
       
+      throw error;
+    }
+  }
+
+  async deleteUserById(id: number) {
+    try {
+      // If using Prisma
+      return await this.prisma.user.delete({
+        where: { id }
+      });
+      
+      // If using TypeORM
+      // return await this.userRepository.delete(id);
+    } catch (error) {
+      console.error('❌ [Service] Error deleting user:', error);
       throw error;
     }
   }

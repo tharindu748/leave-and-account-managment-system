@@ -489,4 +489,26 @@ export class UsersController {
       };
     }
   }
+
+  @Delete(':id')
+  async deleteUser(@Param('id', ParseIntPipe) id: number) {
+    console.log('🗑️ [Backend] DELETE /users/' + id + ' - Deleting user');
+    
+    try {
+      const result = await this.usersService.deleteUserById(id);
+      console.log('✅ [Backend] User deleted successfully');
+      return {
+        success: true,
+        message: 'User deleted successfully',
+        data: result
+      };
+    } catch (error) {
+      console.error('❌ [Backend] Error deleting user:', error);
+      throw new HttpException(
+        error.message || 'Failed to delete user',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+  
 }
