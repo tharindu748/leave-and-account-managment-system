@@ -106,7 +106,7 @@ export default function EmployeesSalary() {
     setSavingId(employee.id);
     try {
       // ✅ Also use direct URL for POST requests
-      await axios.post("http://localhost:3000/salary/config", {
+      await axios.post("https://leave-and-account-managment-system.onrender.com/salary/config", {
         userId: employee.id,
         basicSalary: employee.basicSalary,
         otRate: employee.otRate,
