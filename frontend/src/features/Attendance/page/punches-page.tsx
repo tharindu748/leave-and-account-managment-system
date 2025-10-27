@@ -427,7 +427,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"; // ✅ Import Card components
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -440,7 +440,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, PlusCircle, X } from "lucide-react"; // ✅ Import PlusCircle
+import { CalendarIcon, PlusCircle, X } from "lucide-react";
 import {
   format,
   startOfDay,
@@ -484,7 +484,7 @@ export type User = {
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    const mql = window.matchMedia("(max-width: 640px)");
+    const mql = window.matchMedia("(max-width: 640px)"); // sm breakpoint
     const update = () => setIsMobile(mql.matches);
     update();
     mql.addEventListener?.("change", update);
@@ -522,7 +522,7 @@ function PunchesPage() {
       if (name?.trim()) params.set("name", name.trim());
       if (dateRange?.from) params.set("from", dateRange.from.toISOString());
       if (dateRange?.to) params.set("to", dateRange.to.toISOString());
-      
+
       const res = await api.get(`/punches?${params.toString()}`);
       setData(res.data);
     } catch (err: any) {
@@ -545,6 +545,7 @@ function PunchesPage() {
   useEffect(() => {
     fetchPunches();
     setBreadcrumb(["Attendance", "Punches"]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setBreadcrumb]);
 
   const handleDelete = async (requestId: number) => {
@@ -607,15 +608,14 @@ function PunchesPage() {
     <>
       <PageHeader>
         <PageHeaderTitle value="Punches" />
-        {/* ✅ Button moved to header for better UX */}
         <Button onClick={() => setAddPunchToggle(true)}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Manual Punch
         </Button>
       </PageHeader>
 
-      {/* ✅ Replaced nested divs with semantic Cards */}
-      <div className="space-y-6">
+      {/* ✅ Added padding for mobile (p-4) and desktop (md:p-6) */}
+      <div className="p-4 md:p-6 space-y-6">
         {/* --- Filter Card --- */}
         <Card>
           <CardHeader>
@@ -628,14 +628,12 @@ function PunchesPage() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                // ✅ This layout stacks on mobile and wraps on desktop
                 className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-4"
               >
                 <FormField
                   control={form.control}
                   name="employeeId"
                   render={({ field }) => (
-                    // ✅ flex-1 allows fields to grow and wrap
                     <FormItem className="flex-1 min-w-[200px]">
                       <FormLabel>Employee ID</FormLabel>
                       <FormControl>
@@ -664,7 +662,6 @@ function PunchesPage() {
                   control={form.control}
                   name="dateRange"
                   render={({ field }) => (
-                    // ✅ Date picker given a slightly larger min-width
                     <FormItem className="flex-1 min-w-[240px]">
                       <FormLabel>Date / Date Range</FormLabel>
                       <FormControl>
@@ -672,7 +669,6 @@ function PunchesPage() {
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
-                              // ✅ w-full ensures it takes full width in its flex container
                               className="w-full justify-start text-left font-normal"
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -772,7 +768,6 @@ function PunchesPage() {
 
                 <Button
                   type="submit"
-                  // ✅ w-full on mobile, auto-width on desktop
                   className="w-full md:w-auto"
                   disabled={form.formState.isSubmitting}
                 >
