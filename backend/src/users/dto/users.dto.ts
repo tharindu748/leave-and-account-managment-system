@@ -53,6 +53,10 @@ export class UpdateRegUserDto {
 
   @IsOptional()
   @IsString()
+  employeeId?: string; // ✅ ADD THIS MISSING FIELD
+
+  @IsOptional()
+  @IsString()
   cardNumber?: string;
 
   @IsOptional()

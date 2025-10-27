@@ -9,17 +9,28 @@ import { columns, type Employee } from "../components/columns";
 import EditUserDialog from "../components/edit-user-dialog";
 import { toast } from "sonner";
 
+// export type User = {
+//   joinDate(joinDate: any): string | undefined;
+//   address: string;
+//   id: string;
+//   name: string;
+//   email?: string;
+//   epfNo?: string;
+//   nic?: string;
+//   jobPosition?: string;
+// };
 export type User = {
-  joinDate(joinDate: any): string | undefined;
-  address: string;
-  id: string;
+  id: number;
   name: string;
-  email?: string;
+  email: string;
+  employeeId?: string;
   epfNo?: string;
   nic?: string;
   jobPosition?: string;
+  imagePath?: string;
+  joinDate?: string;
+  address?: string;
 };
-
 function UsersPage1() {
   const { setBreadcrumb } = useOutletContext<OutletContextType>();
   const [data, setData] = useState<Employee[]>([]);
