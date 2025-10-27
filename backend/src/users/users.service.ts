@@ -4,9 +4,6 @@ import { CreateRegUserDto, UpdateRegUserDto } from './dto/users.dto';
 
 @Injectable()
 export class UsersService {
-  deleteUserById(id: number) {
-    throw new Error('Method not implemented.');
-  }
   constructor(private readonly db: DatabaseService) {}
 
   async listUsers() {
@@ -23,8 +20,8 @@ export class UsersService {
           nic: true,
           jobPosition: true,
           imagePath: true,
-          joinDate: true, // ✅ Now included
-          address: true, // ✅ Now included
+          joinDate: true,
+          address: true,
           active: true,
           createdAt: true,
         },
@@ -52,13 +49,13 @@ export class UsersService {
           nic: true,
           jobPosition: true,
           imagePath: true,
-          joinDate: true, // ✅ Now included
-          address: true, // ✅ Now included
+          joinDate: true,
+          address: true,
           active: true,
           createdAt: true,
           updatedAt: true,
-          isAdmin: true, // ✅ For auth service
-          refreshToken: true, // ✅ For auth service
+          isAdmin: true,
+          refreshToken: true,
         }
       });
 
@@ -90,11 +87,11 @@ export class UsersService {
           nic: true,
           jobPosition: true,
           imagePath: true,
-          joinDate: true, // ✅ Now included
-          address: true, // ✅ Now included
+          joinDate: true,
+          address: true,
           active: true,
-          isAdmin: true, // ✅ For auth service
-          refreshToken: true, // ✅ For auth service
+          isAdmin: true,
+          refreshToken: true,
         }
       });
 
@@ -152,18 +149,43 @@ export class UsersService {
     }
   }
 
+  // ✅ FIXED: Proper deleteUserById method
   async deleteUserById(id: number) {
+    console.log('🗑️ [Service] Deleting user with ID:', id);
     try {
-      // If using Prisma
-      return await this.prisma.user.delete({
+      // First check if user exists
+      const user = await this.db.user.findUnique({
+        where: { id },
+      });
+
+      if (!user) {
+        console.warn('⚠️ [Service] User not found with ID:', id);
+        throw new HttpException(`User with ID ${id} not found`, HttpStatus.NOT_FOUND);
+      }
+
+      // Delete the user
+      const result = await this.db.user.delete({
         where: { id }
       });
-      
-      // If using TypeORM
-      // return await this.userRepository.delete(id);
+
+      console.log('✅ [Service] User deleted successfully:', { id: result.id, name: result.name });
+      return {
+        success: true,
+        message: `User "${result.name}" deleted successfully`,
+        data: result
+      };
     } catch (error) {
       console.error('❌ [Service] Error deleting user:', error);
-      throw error;
+      
+      // Handle specific Prisma errors
+      if (error.code === 'P2025') {
+        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+      
+      throw new HttpException(
+        error.message || 'Failed to delete user',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
@@ -200,8 +222,8 @@ export class UsersService {
           nic: true,
           jobPosition: true,
           imagePath: true,
-          joinDate: true, // ✅ Now included
-          address: true, // ✅ Now included
+          joinDate: true,
+          address: true,
           active: true,
           createdAt: true,
           updatedAt: true,
@@ -234,7 +256,7 @@ export class UsersService {
     // Convert empty strings to null for optional fields
     const optionalFields = [
       'email', 'epfNo', 'nic', 'jobPosition', 
-      'imagePath', 'cardNumber', 'address' // ✅ Now includes address
+      'imagePath', 'cardNumber', 'address', 'employeeId'
     ];
     
     optionalFields.forEach(field => {
@@ -281,8 +303,8 @@ export class UsersService {
         epfNo: dto.epfNo,
         nic: dto.nic,
         jobPosition: dto.jobPosition,
-        joinDate: dto.joinDate ? new Date(dto.joinDate) : null, // ✅ Now included
-        address: dto.address || null, // ✅ Now included
+        joinDate: dto.joinDate ? new Date(dto.joinDate) : null,
+        address: dto.address || null,
       };
 
       const user = await this.db.user.upsert({
@@ -313,8 +335,8 @@ export class UsersService {
           nic: true,
           jobPosition: true,
           imagePath: true,
-          joinDate: true, // ✅ Now included
-          address: true, // ✅ Now included
+          joinDate: true,
+          address: true,
           active: true,
         }
       });
@@ -343,8 +365,8 @@ export class UsersService {
           nic: true,
           jobPosition: true,
           imagePath: true,
-          joinDate: true, // ✅ Now included
-          address: true, // ✅ Now included
+          joinDate: true,
+          address: true,
           active: true,
         }
       });
