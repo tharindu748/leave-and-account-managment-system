@@ -56,10 +56,28 @@ const EmployeeDashboard: React.FC = () => {
       }
 
       console.log("Fetching dashboard data for user ID:", userId);
-      const res = await api.get(`/reports/${userId}/dashboard`);
+      
+      // ✅ FIXED: Use the new dashboard endpoint
+      const res = await api.get(`/users/${userId}/dashboard`);
       console.log("Dashboard data received:", res.data);
       
-      setData(res.data);
+      // Transform the data to match your Employee interface
+      const userData = res.data;
+      const transformedData: Employee = {
+        id: userData.id.toString(),
+        name: userData.name,
+        email: userData.email,
+        position: userData.position || userData.jobPosition || "Employee",
+        epfNo: userData.epfNo || "N/A",
+        image: userData.imagePath, // Use imagePath from backend
+        workedSinceJoining: userData.workedSinceJoining || 0,
+        totalLeaveCount: userData.totalLeaveCount || 0,
+        leaveTaken: userData.leaveTaken || { sick: 0, annual: 0 },
+        remainingHolidays: userData.remainingHolidays || 0,
+        workHoursThisMonth: userData.workHoursThisMonth || 0
+      };
+      
+      setData(transformedData);
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
       const errorMessage = error.response?.data?.message || error.message || "Failed to load dashboard data";
@@ -68,6 +86,7 @@ const EmployeeDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     setBreadcrumb(["Dashboard"]);
@@ -139,9 +158,14 @@ const EmployeeDashboard: React.FC = () => {
 
             // Save the Firebase URL to PostgreSQL
             console.log("💾 Saving Firebase URL to PostgreSQL...");
-            const response = await api.put(`/employees/${userId}/update-image`, {
-              imagePath: downloadURL
-            });
+            // const response = await api.put(`/employees/${userId}/update-image`, {
+            //   imagePath: downloadURL
+            // });
+
+            // ✅ TO:
+              const response = await api.patch(`/users/${userId}/simple`, {
+                imagePath: downloadURL
+              });
 
             console.log("✅ PostgreSQL update response:", response.data);
 
