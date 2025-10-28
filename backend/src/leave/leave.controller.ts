@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   Query,
+  HttpException,
 } from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { CreateLeaveRequestDto } from './dto/create_leave_request.dto';
