@@ -104,4 +104,55 @@ export class LeaveController {
   async testEndpoint() {
     return this.leaveService.testEndpoint();
   }
+
+
+  // Add this endpoint to leave.controller.ts
+  @Get('balance/user/:userId')
+  async getUserLeaveBalances(@Param('userId', ParseIntPipe) userId: number) {
+    const currentYear = new Date().getFullYear();
+    
+    try {
+      console.log(`📊 Fetching leave balances for user ${userId}, year ${currentYear}`);
+      
+      // Get current leave policies
+      const policies = await this.leaveService.findLeavePolicy();
+      const annualPolicy = policies.find(p => p.leaveType === 'ANNUAL');
+      const casualPolicy = policies.find(p => p.leaveType === 'CASUAL');
+
+      console.log('📋 Leave policies:', { annualPolicy, casualPolicy });
+
+      // Get current balances (this will create if not exists)
+      const annualBalance = await this.leaveService.getLeaveBalance(
+        userId, currentYear, LeaveType.ANNUAL
+      );
+      const casualBalance = await this.leaveService.getLeaveBalance(
+        userId, currentYear, LeaveType.CASUAL
+      );
+
+      console.log('💰 Leave balances:', { 
+        annual: annualBalance.balance, 
+        casual: casualBalance.balance 
+      });
+
+      const result = {
+        annualLeave: {
+          total: annualPolicy?.defaultBalance || 21,
+          available: annualBalance.balance
+        },
+        casualSickLeave: {
+          total: casualPolicy?.defaultBalance || 7,
+          available: casualBalance.balance
+        }
+      };
+
+      console.log('✅ Final leave data:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error fetching leave balances:', error);
+      throw new HttpException(
+        'Failed to fetch leave balances',
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 }
