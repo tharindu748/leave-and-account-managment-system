@@ -37,6 +37,7 @@ const CalendarLeave: React.FC = () => {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   // ✅ FETCH REAL LEAVE DATA FROM BACKEND
   const fetchRealLeaveData = async () => {
@@ -50,10 +51,11 @@ const CalendarLeave: React.FC = () => {
       console.log("🔄 Fetching real leave data for user:", user.id);
       setIsLoading(true);
       
-      const response = await api.get(`/leave/balance/user/${user.id}`);
+      const response = await api.get(`/leave/balance/user/${user.id}?t=${Date.now()}`);
       console.log("✅ Real leave data received:", response.data);
       
       setRealLeaveData(response.data);
+      setLastRefresh(new Date()); // Update last refresh time
     } catch (error: any) {
       console.error("❌ Failed to fetch leave balances:", error);
       toast.error("Failed to load leave balances");
@@ -62,18 +64,13 @@ const CalendarLeave: React.FC = () => {
     }
   };
 
-  // ✅ FIXED: NO INFINITE LOOP
+  // ✅ FETCH ON COMPONENT MOUNT
   useEffect(() => {
     setBreadcrumb(["Calendar"]);
     fetchRealLeaveData(); // Fetch real data on component mount
-  }, [setBreadcrumb, user?.id]); // ✅ REMOVED realLeaveData
+  }, [setBreadcrumb, user?.id]);
 
-  // ✅ DEBUGGING ONLY
-  useEffect(() => {
-    console.log("🔍 REAL LEAVE DATA UPDATED:", realLeaveData);
-  }, [realLeaveData]);
-
-  // ✅ LISTEN FOR POLICY UPDATES
+  // ✅ LISTEN FOR POLICY UPDATES ONLY
   useEffect(() => {
     const handlePolicyUpdate = () => {
       console.log("🔄 Leave policy updated - refreshing data");
@@ -84,13 +81,13 @@ const CalendarLeave: React.FC = () => {
     return () => window.removeEventListener('leavePolicyUpdated', handlePolicyUpdate);
   }, []);
 
-  // ✅ REFRESH DATA PERIODICALLY
+  // ✅ OPTIONAL: Refresh every 5 minutes (instead of 10 seconds)
   useEffect(() => {
-    const interval = setInterval(fetchRealLeaveData, 10000); // Refresh every 10 seconds
+    const interval = setInterval(fetchRealLeaveData, 300000); // 5 minutes
     return () => clearInterval(interval);
   }, [user?.id]);
 
-  // ... rest of your functions remain the same ...
+  // ... rest of your functions remain exactly the same ...
   const handleDayClick = (date: Date) => {
     const key = formatDate(date);
     const isLeaveTypeSelectedInPanel = !!leaveType;
@@ -225,6 +222,7 @@ const CalendarLeave: React.FC = () => {
             <p>✅ Backend Data: Annual {realLeaveData.annualLeave.available}/{realLeaveData.annualLeave.total}, 
             Casual {realLeaveData.casualSickLeave.available}/{realLeaveData.casualSickLeave.total}</p>
             <p>Loading: {isLoading ? "Yes" : "No"}</p>
+            <p>Last refresh: {lastRefresh.toLocaleTimeString()}</p>
           </div>
         </div>
 
@@ -245,7 +243,7 @@ const CalendarLeave: React.FC = () => {
               </div>
             </>
           ) : (
-            // Real data - SHOULD NOW SHOW 20/13 and 15/10
+            // Real data
             <>
               <LeaveCard
                 title="ANNUAL LEAVE"
@@ -273,7 +271,7 @@ const CalendarLeave: React.FC = () => {
             {isLoading ? "🔄 Refreshing..." : "🔄 Refresh Leave Data"}
           </button>
           <div className="text-sm text-gray-600">
-            Last updated: {new Date().toLocaleTimeString()}
+            Auto-refresh: 5 minutes
           </div>
         </div>
 
