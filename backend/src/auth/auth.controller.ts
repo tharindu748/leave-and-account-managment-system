@@ -12,6 +12,7 @@ import {
   UseGuards,
   UsePipes,
   ValidationPipe,
+   InternalServerErrorException // ✅ ADD THIS IMPORT
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PassportLocalGuard } from './guards/passport-local.guard';
@@ -46,15 +47,22 @@ export class AuthController {
     return result;
   }
 
-  @Put('users/:id')
-  @UsePipes(new ValidationPipe())
-  async updateUser(
-    @Param('id') id: number,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.authService.updateUser(+id, updateUserDto);
+@Put('users/:id')
+@UsePipes(new ValidationPipe())
+async updateUser(
+  @Param('id') id: number,
+  @Body() updateUserDto: UpdateUserDto,
+) {
+  try {
+    console.log('Updating user:', id, updateUserDto);
+    const result = await this.authService.updateUser(+id, updateUserDto);
+    console.log('Update successful:', result);
+    return result;
+  } catch (error) {
+    console.error('Update user error:', error);
+    throw new InternalServerErrorException(error.message || 'Failed to update user');
   }
-
+}
   @HttpCode(HttpStatus.OK)
   @UseGuards(PassportLocalGuard)
   @Post('login')
