@@ -284,7 +284,9 @@ const CalendarLeave: React.FC = () => {
   useEffect(() => {
     setBreadcrumb(["Calendar"]);
     fetchRealLeaveData(); // Fetch real data on component mount
-  }, [setBreadcrumb, user?.id]);
+      console.log("🔍 REAL LEAVE DATA FROM BACKEND:", realLeaveData);
+  console.log("🔍 User ID:", user?.id);
+  }, [realLeaveData,setBreadcrumb, user?.id]);
 
   // ✅ REFRESH DATA PERIODICALLY
   useEffect(() => {
