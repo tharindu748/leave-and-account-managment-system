@@ -362,11 +362,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"; // Added Card components
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
 
 import {
   Popover,
@@ -393,9 +395,9 @@ import {
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 
-// This schema isn't fully utilized by the form, but we'll keep it as is.
+// Fixed schema - employeeId should be optional for the form
 const filterSchema = z.object({
-  employeeId: z.string().min(1, "Employee ID is required"),
+  employeeId: z.string().optional(),
   dateRange: z
     .object({
       from: z.date().nullable().optional(),
@@ -416,12 +418,11 @@ export type User = {
 
 type FilterFormValues = z.infer<typeof filterSchema>;
 
-// This hook is well-implemented and useful for the calendar.
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    const mql = window.matchMedia("(max-width: 640px)"); // sm breakpoint
+    const mql = window.matchMedia("(max-width: 768px)"); // md breakpoint
     const update = () => setIsMobile(mql.matches);
     update();
     mql.addEventListener?.("change", update);
@@ -441,7 +442,7 @@ function UserPunchesPage() {
     resolver: zodResolver(filterSchema),
     defaultValues: {
       dateRange: undefined,
-      employeeId: user?.employeeId || "", // Pre-fill from context
+      employeeId: user?.employeeId || "",
     },
   });
 
@@ -456,25 +457,19 @@ function UserPunchesPage() {
     form.clearErrors("root.serverError");
 
     try {
-      // **REFACTORED/FIXED API CALL**
-      // Use a params object to build the query string correctly.
-      // This fixes the bug where employeeId was lost when a date was set.
-      const params: { employeeId: string; from?: string; to?: string; date?: string } = {
-        employeeId: String(user?.employeeId),
+      const params: any = {
+        employeeId: values.employeeId || user?.employeeId,
       };
 
       if (values.dateRange?.from && values.dateRange?.to) {
         params.from = values.dateRange.from.toISOString();
         params.to = values.dateRange.to.toISOString();
       } else if (values.dateRange?.from) {
-        // Handle single date selection (as in original logic)
         params.date = values.dateRange.from.toISOString();
       }
       
-      // Assuming the search endpoint is /punches
-      // If no date is selected, it will just search by employeeId
       const res = await api.get("/punches", { params });
-      setData(res.data);
+      setData(res.data || []);
     } catch (error: any) {
       form.setError("root.serverError", {
         type: "server",
@@ -485,27 +480,29 @@ function UserPunchesPage() {
   };
 
   const fetchPunches = async () => {
-    if (!user?.employeeId) return; // Don't fetch if no user
+    if (!user?.employeeId) return;
     try {
       const res = await api.get(
         `/punches/latest?employeeId=${user?.employeeId}`
       );
-      setData(res.data);
+      setData(res.data || []);
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Failed to fetch punches");
+      setData([]); // Ensure data is always an array
     }
   };
   
-  // New handler for the Reset button
   const handleReset = () => {
-    form.reset({ dateRange: undefined, employeeId: user?.employeeId || "" });
-    fetchPunches(); // Re-fetch the initial "latest" data
+    form.reset({ 
+      dateRange: undefined, 
+      employeeId: user?.employeeId || "" 
+    });
+    fetchPunches();
   };
 
   useEffect(() => {
     setBreadcrumb(["Activity", "Punches"]);
     fetchPunches();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const today = new Date();
@@ -554,98 +551,89 @@ function UserPunchesPage() {
     setOpen(false);
   };
 
-  return (
-    <>
-      <PageHeader>
-        <div>
+  // --- MOBILE UI ---
+  if (isMobile) {
+    return (
+      <>
+        <PageHeader>
           <PageHeaderTitle value="Punches" />
-        </div>
-      </PageHeader>
+        </PageHeader>
 
-      {/* New responsive layout wrapper */}
-      <div className="p-4 md:p-6 space-y-6">
-        {/* Card for Filters */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Punches</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                // **UPDATED FOR RESPONSIVENESS**
-                // Stacks vertically on mobile, horizontal on sm+
-                className="flex flex-col sm:flex-row sm:items-end gap-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="dateRange"
-                  render={({ field }) => (
-                    // flex-grow makes the date picker take available space
-                    <FormItem className="flex-grow"> 
-                      <FormLabel>Date / Date Range</FormLabel>
-                      <FormControl>
-                        <Popover open={open} onOpenChange={setOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              // w-full on mobile, 360px on sm+
-                              className="w-full sm:w-[360px] justify-start text-left font-normal"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              <span className="truncate">
-                                {prettyLabel(
-                                  field.value as DateRange | undefined
+        <div className="p-4 space-y-4">
+          {/* Mobile Filter Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Search Punches</CardTitle>
+              <CardDescription>
+                Filter by date range
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  {/* Hidden employeeId field for mobile since it's pre-filled */}
+                  <FormField
+                    control={form.control}
+                    name="employeeId"
+                    render={({ field }) => (
+                      <FormItem className="hidden">
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dateRange"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date Range</FormLabel>
+                        <FormControl>
+                          <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                <span className="truncate">
+                                  {prettyLabel(field.value as DateRange | undefined)}
+                                </span>
+                                {field.value?.from && (
+                                  <X
+                                    className="ml-auto h-4 w-4 opacity-50 hover:opacity-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      field.onChange(undefined);
+                                    }}
+                                  />
                                 )}
-                              </span>
-                              {field.value?.from && (
-                                <X
-                                  className="ml-auto h-4 w-4 opacity-50 hover:opacity-100"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    field.onChange(undefined);
-                                  }}
-                                />
-                              )}
-                            </Button>
-                          </PopoverTrigger>
+                              </Button>
+                            </PopoverTrigger>
 
-                          <PopoverContent
-                            align="start"
-                            sideOffset={8}
-                            className="w-[calc(100vw-2rem)] max-w-[720px] p-0"
-                          >
-                            <div className="flex flex-col sm:flex-row sm:divide-x">
-                              {/* Left: Calendar */}
+                            <PopoverContent align="start" className="w-[calc(100vw-2rem)] p-0">
                               <div className="p-3">
                                 <Calendar
                                   initialFocus
                                   mode="range"
-                                  numberOfMonths={isMobile ? 1 : 2}
+                                  numberOfMonths={1}
                                   selected={field.value as DateRange | undefined}
                                   onSelect={(range) => {
                                     field.onChange(range);
-                                    // auto-close when a full range is set
                                     if (range?.from && range?.to) {
-                                      // small delay so the UI updates before closing
                                       setTimeout(() => setOpen(false), 50);
                                     }
                                   }}
-                                  className="rounded-md" // Removed redundant border
-                                  classNames={{
-                                    day_selected:
-                                      "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                                    day_today:
-                                      "bg-accent text-accent-foreground font-semibold",
-                                    day_outside:
-                                      "text-muted-foreground opacity-50",
-                                  }}
+                                  className="rounded-md"
                                 />
                               </div>
-
-                              {/* Right: Presets & actions */}
-                              <div className="flex flex-col w-full sm:w-[240px] p-3 space-y-3">
-                                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                              <div className="p-3 border-t space-y-3">
+                                <div className="text-xs font-medium text-muted-foreground uppercase">
                                   Quick presets
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
@@ -664,28 +652,150 @@ function UserPunchesPage() {
                                     </Button>
                                   ))}
                                 </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
 
-                                <div className="flex-grow" /> {/* Pushes actions to bottom */}
-                                
-                                <div className="flex items-center justify-between pt-2 border-t border-border -mx-3 px-3">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      form.setValue("dateRange", undefined)
-                                    }
-                                  >
-                                    Clear
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={applyAndClose}
-                                    disabled={!form.getValues().dateRange?.from}
-                                  >
-                                    Apply
-                                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="submit" 
+                      className="flex-1" 
+                      disabled={form.formState.isSubmitting}
+                    >
+                      {form.formState.isSubmitting ? "Searching..." : "Search"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleReset}
+                      disabled={form.formState.isSubmitting}
+                      className="flex-1"
+                    >
+                      Reset
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Mobile Results Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Punch History</CardTitle>
+              <CardDescription>
+                {data.length} record(s) found
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DataTable3 columns={userPunchColumns} data={data} />
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  // --- DESKTOP UI ---
+  return (
+    <>
+      <PageHeader>
+        <PageHeaderTitle value="Punches" />
+      </PageHeader>
+
+      <div className="p-6 space-y-6">
+        {/* Desktop Filter Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Search Punches</CardTitle>
+            <CardDescription>
+              Filter punches by date range
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-row items-end gap-4"
+              >
+                {/* Hidden employeeId field for desktop since it's pre-filled */}
+                <FormField
+                  control={form.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dateRange"
+                  render={({ field }) => (
+                    <FormItem className="flex-1 min-w-[300px]">
+                      <FormLabel>Date / Date Range</FormLabel>
+                      <FormControl>
+                        <Popover open={open} onOpenChange={setOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              <span className="truncate">
+                                {prettyLabel(field.value as DateRange | undefined)}
+                              </span>
+                              {field.value?.from && (
+                                <X
+                                  className="ml-auto h-4 w-4 opacity-50 hover:opacity-100"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    field.onChange(undefined);
+                                  }}
+                                />
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+
+                          <PopoverContent align="start" className="w-auto p-0">
+                            <div className="flex divide-x">
+                              <div className="p-3">
+                                <Calendar
+                                  initialFocus
+                                  mode="range"
+                                  numberOfMonths={2}
+                                  selected={field.value as DateRange | undefined}
+                                  onSelect={field.onChange}
+                                  className="rounded-md"
+                                />
+                              </div>
+                              <div className="w-[240px] p-3 space-y-3">
+                                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                  Quick presets
+                                </div>
+                                <div className="grid grid-cols-1 gap-2">
+                                  {presets.map((p) => (
+                                    <Button
+                                      key={p.label}
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => {
+                                        form.setValue("dateRange", p.range);
+                                        applyAndClose();
+                                      }}
+                                    >
+                                      {p.label}
+                                    </Button>
+                                  ))}
                                 </div>
                               </div>
                             </div>
@@ -697,30 +807,26 @@ function UserPunchesPage() {
                   )}
                 />
 
-                {/* Group buttons for better responsive layout */}
                 <div className="flex items-center gap-2">
                   <Button
                     type="submit"
                     disabled={form.formState.isSubmitting}
-                    className="w-full sm:w-auto" // Full width on mobile
                   >
                     {form.formState.isSubmitting ? "Loading..." : "Search"}
                   </Button>
                   
-                  {/* New Reset Button */}
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleReset}
                     disabled={form.formState.isSubmitting}
-                    className="w-full sm:w-auto" // Full width on mobile
                   >
                     Reset
                   </Button>
                 </div>
 
                 {form.formState.errors.root?.serverError && (
-                  <div className="text-center text-xs text-destructive sm:col-span-full">
+                  <div className="text-center text-xs text-destructive">
                     {form.formState.errors.root.serverError.message}
                   </div>
                 )}
@@ -729,13 +835,15 @@ function UserPunchesPage() {
           </CardContent>
         </Card>
 
-        {/* Card for Data Table */}
+        {/* Desktop Results Card */}
         <Card>
           <CardHeader>
             <CardTitle>Punch History</CardTitle>
+            <CardDescription>
+              Showing {data.length} record(s)
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Removed mt-8, spacing is handled by Card and space-y-6 */}
             <DataTable3 columns={userPunchColumns} data={data} />
           </CardContent>
         </Card>
