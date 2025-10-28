@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Put,
   Request,
   Res,
   UseGuards,
@@ -38,6 +39,19 @@ export class AuthController {
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
   ) {
+    const { refreshToken, ...result } =
+      await this.authService.register(registerDto);
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions);
+    return result;
+  }
+    // ✅ ADD PUT endpoint for registration
+  @Put('register')
+  @UsePipes(new ValidationPipe())
+  async registerPut(
+    @Body() registerDto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    // Reuse the same service method
     const { refreshToken, ...result } =
       await this.authService.register(registerDto);
     res.cookie('refreshToken', refreshToken, refreshCookieOptions);
