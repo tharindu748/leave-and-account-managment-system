@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Put,
   Request,
@@ -14,7 +15,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PassportLocalGuard } from './guards/passport-local.guard';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto, UpdateUserDto  } from './dto/register.dto';
 import { PassportJwtAuthGuard } from './guards/passport-jwt.guard';
 import { RefreshTokenGuard } from './guards/passport-jwt-refresh.guard';
 import type { Response, CookieOptions } from 'express';
@@ -44,18 +45,14 @@ export class AuthController {
     res.cookie('refreshToken', refreshToken, refreshCookieOptions);
     return result;
   }
-    // ✅ ADD PUT endpoint for registration
-  @Put('register')
+
+  @Put('users/:id')
   @UsePipes(new ValidationPipe())
-  async registerPut(
-    @Body() registerDto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
+  async updateUser(
+    @Param('id') id: number,
+    @Body() updateUserDto: UpdateUserDto,
   ) {
-    // Reuse the same service method
-    const { refreshToken, ...result } =
-      await this.authService.register(registerDto);
-    res.cookie('refreshToken', refreshToken, refreshCookieOptions);
-    return result;
+    return this.authService.updateUser(+id, updateUserDto);
   }
 
   @HttpCode(HttpStatus.OK)

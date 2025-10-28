@@ -6,7 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterDto,UpdateUserDto} from './dto/register.dto';
 import { AuthResultDto } from './dto/auth-result.dto';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
@@ -164,7 +164,14 @@ export class AuthService {
       refreshToken: hashedRefreshToken,
     });
   }
-
+async updateUser(userId: number, updateUserDto: UpdateUserDto) {
+  // If password is being updated, hash it
+  if (updateUserDto.password) {
+    updateUserDto.password = await bcrypt.hash(updateUserDto.password, this.SALT_ROUNDS);
+  }
+  
+  return this.usersService.update(userId, updateUserDto);
+}
   async getTokens(
     userId: number,
     name: string,

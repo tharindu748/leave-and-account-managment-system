@@ -21,3 +21,21 @@ export class RegisterDto {
   @IsBoolean()
   isAdmin: boolean;
 }
+
+export class UpdateUserDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isAdmin?: boolean;
+}
