@@ -107,53 +107,80 @@ export class LeaveController {
   }
 
 
-  // Add this endpoint to leave.controller.ts
-  @Get('balance/user/:userId')
-  async getUserLeaveBalances(@Param('userId', ParseIntPipe) userId: number) {
-    const currentYear = new Date().getFullYear();
+@Get('balance/user/:userId')
+async getUserLeaveBalances(@Param('userId', ParseIntPipe) userId: number) {
+  const currentYear = new Date().getFullYear();
+  
+  try {
+    console.log(`📊 Fetching leave balances for user ${userId}, year ${currentYear}`);
     
-    try {
-      console.log(`📊 Fetching leave balances for user ${userId}, year ${currentYear}`);
-      
-      // Get current leave policies
-      const policies = await this.leaveService.findLeavePolicy();
-      const annualPolicy = policies.find(p => p.leaveType === 'ANNUAL');
-      const casualPolicy = policies.find(p => p.leaveType === 'CASUAL');
+    // Get current leave policies
+    const policies = await this.leaveService.findLeavePolicy();
+    const annualPolicy = policies.find(p => p.leaveType === 'ANNUAL');
+    const casualPolicy = policies.find(p => p.leaveType === 'CASUAL');
 
-      console.log('📋 Leave policies:', { annualPolicy, casualPolicy });
+    console.log('📋 Leave policies:', { annualPolicy, casualPolicy });
 
-      // Get current balances (this will create if not exists)
-      const annualBalance = await this.leaveService.getLeaveBalance(
-        userId, currentYear, LeaveType.ANNUAL
+    // Get current balances
+    const annualBalance = await this.leaveService.getLeaveBalance(
+      userId, currentYear, LeaveType.ANNUAL
+    );
+    const casualBalance = await this.leaveService.getLeaveBalance(
+      userId, currentYear, LeaveType.CASUAL
+    );
+
+    console.log('💰 Raw balances from DB:', { 
+      annual: annualBalance.balance, 
+      casual: casualBalance.balance 
+    });
+
+    // ✅ CORRECT CALCULATION: Available = Total - Used
+    const annualTotal = annualPolicy?.defaultBalance || 21;
+    const casualTotal = casualPolicy?.defaultBalance || 7;
+
+    // Calculate used leaves by counting approved leave requests
+    const approvedLeaves = await this.leaveService.findLeaveRequests(userId);
+    const currentYearApprovedLeaves = approvedLeaves.filter(leave => 
+      leave.status === 'APPROVED' && 
+      leave.dates.some(date => new Date(date.leaveDate).getFullYear() === currentYear)
+    );
+
+    let annualUsed = 0;
+    let casualUsed = 0;
+
+    currentYearApprovedLeaves.forEach(leave => {
+      const daysCount = leave.dates.reduce((sum, date) => 
+        sum + (date.isHalfDay ? 0.5 : 1), 0
       );
-      const casualBalance = await this.leaveService.getLeaveBalance(
-        userId, currentYear, LeaveType.CASUAL
-      );
+      if (leave.leaveType === 'ANNUAL') {
+        annualUsed += daysCount;
+      } else if (leave.leaveType === 'CASUAL') {
+        casualUsed += daysCount;
+      }
+    });
 
-      console.log('💰 Leave balances:', { 
-        annual: annualBalance.balance, 
-        casual: casualBalance.balance 
-      });
+    console.log('📅 Used leaves:', { annualUsed, casualUsed });
 
-      const result = {
-        annualLeave: {
-          total: annualPolicy?.defaultBalance || 21,
-          available: annualBalance.balance
-        },
-        casualSickLeave: {
-          total: casualPolicy?.defaultBalance || 7,
-          available: casualBalance.balance
-        }
-      };
+    // ✅ CORRECT: Available = Total - Used
+    const result = {
+      annualLeave: {
+        total: annualTotal,
+        available: Math.max(0, annualTotal - annualUsed) // ✅ CORRECT
+      },
+      casualSickLeave: {
+        total: casualTotal,
+        available: Math.max(0, casualTotal - casualUsed) // ✅ CORRECT
+      }
+    };
 
-      console.log('✅ Final leave data:', result);
-      return result;
-    } catch (error) {
-      console.error('❌ Error fetching leave balances:', error);
-      throw new HttpException(
-        'Failed to fetch leave balances',
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+    console.log('✅ Corrected leave data:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Error fetching leave balances:', error);
+    throw new HttpException(
+      'Failed to fetch leave balances',
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
   }
+}
 }
