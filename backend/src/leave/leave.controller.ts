@@ -106,7 +106,6 @@ export class LeaveController {
     return this.leaveService.testEndpoint();
   }
 
-
 @Get('balance/user/:userId')
 async getUserLeaveBalances(@Param('userId', ParseIntPipe) userId: number) {
   const currentYear = new Date().getFullYear();
@@ -121,59 +120,65 @@ async getUserLeaveBalances(@Param('userId', ParseIntPipe) userId: number) {
 
     console.log('📋 Leave policies:', { annualPolicy, casualPolicy });
 
-    // Get current balances
-    const annualBalance = await this.leaveService.getLeaveBalance(
-      userId, currentYear, LeaveType.ANNUAL
-    );
-    const casualBalance = await this.leaveService.getLeaveBalance(
-      userId, currentYear, LeaveType.CASUAL
-    );
-
-    console.log('💰 Raw balances from DB:', { 
-      annual: annualBalance.balance, 
-      casual: casualBalance.balance 
-    });
-
-    // ✅ CORRECT CALCULATION: Available = Total - Used
-    const annualTotal = annualPolicy?.defaultBalance || 21;
-    const casualTotal = casualPolicy?.defaultBalance || 7;
-
-    // Calculate used leaves by counting approved leave requests
+    // Get approved leave requests for current year to calculate taken leaves
     const approvedLeaves = await this.leaveService.findLeaveRequests(userId);
     const currentYearApprovedLeaves = approvedLeaves.filter(leave => 
       leave.status === 'APPROVED' && 
       leave.dates.some(date => new Date(date.leaveDate).getFullYear() === currentYear)
     );
 
-    let annualUsed = 0;
-    let casualUsed = 0;
+    // Calculate leave counts from approved requests (same as dashboard logic)
+    let sickLeave = 0;
+    let annualLeave = 0;
 
-    currentYearApprovedLeaves.forEach(leave => {
-      const daysCount = leave.dates.reduce((sum, date) => 
-        sum + (date.isHalfDay ? 0.5 : 1), 0
-      );
-      if (leave.leaveType === 'ANNUAL') {
-        annualUsed += daysCount;
-      } else if (leave.leaveType === 'CASUAL') {
-        casualUsed += daysCount;
+    currentYearApprovedLeaves.forEach(request => {
+      const days = request.dates.reduce((total, date) => {
+        return total + (date.isHalfDay ? 0.5 : 1);
+      }, 0);
+
+      if (request.leaveType === 'CASUAL') {
+        sickLeave += days;
+      } else if (request.leaveType === 'ANNUAL') {
+        annualLeave += days;
       }
     });
 
-    console.log('📅 Used leaves:', { annualUsed, casualUsed });
+    const totalLeave = sickLeave + annualLeave;
 
-    // ✅ CORRECT: Available = Total - Used
+    // Calculate remaining holidays based on leave balances (same as dashboard logic)
+    const annualBalance = await this.leaveService.getLeaveBalance(userId, currentYear, LeaveType.ANNUAL);
+    const casualBalance = await this.leaveService.getLeaveBalance(userId, currentYear, LeaveType.CASUAL);
+    
+    // If no balances exist, use default policies
+    const defaultAnnual = annualPolicy?.defaultBalance || 21;
+    const defaultCasual = casualPolicy?.defaultBalance || 7;
+
+    const remainingAnnual = annualBalance.balance > 0 ? annualBalance.balance : defaultAnnual - annualLeave;
+    const remainingCasual = casualBalance.balance > 0 ? casualBalance.balance : defaultCasual - sickLeave;
+    
+    const remainingHolidays = Math.max(0, remainingAnnual + remainingCasual);
+
+    // ✅ RETURN DATA IN SAME FORMAT AS DASHBOARD
     const result = {
       annualLeave: {
-        total: annualTotal,
-        available: Math.max(0, annualTotal - annualUsed) // ✅ CORRECT
+        total: annualPolicy?.defaultBalance || 21,
+        available: remainingAnnual // This should match dashboard's remainingHolidays calculation
       },
       casualSickLeave: {
-        total: casualTotal,
-        available: Math.max(0, casualTotal - casualUsed) // ✅ CORRECT
+        total: casualPolicy?.defaultBalance || 7,
+        available: remainingCasual // This should match dashboard's remainingHolidays calculation
+      },
+      // ✅ ADD DEBUG INFO TO SEE WHAT'S HAPPENING
+      debug: {
+        annualTaken: annualLeave,
+        casualTaken: sickLeave,
+        annualBalance: annualBalance.balance,
+        casualBalance: casualBalance.balance,
+        remainingHolidays: remainingHolidays
       }
     };
 
-    console.log('✅ Corrected leave data:', result);
+    console.log('✅ Calendar leave data (matching dashboard):', result);
     return result;
   } catch (error) {
     console.error('❌ Error fetching leave balances:', error);
