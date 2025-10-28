@@ -117,7 +117,7 @@ function NavUser() {
     return `${API_BASE_URL}/${imagePath}`;
   };
 
-  const imageUrl = getImageUrl(user?.imagePath);
+    const imageUrl = getImageUrl((user as any)?.image || (user as any)?.imagePath);
   
   // Get user initials for fallback avatar
   const getUserInitials = (name: string | undefined) => {
