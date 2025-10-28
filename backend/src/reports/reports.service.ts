@@ -22,7 +22,7 @@ export class ReportsService {
       },
     });
 
-    console.log('🔍 User lookup result:', user);
+    console.log('🔍 User lookup result1:', user);
     if (!user) {
       console.log('⚠️ User not found in DB, returning mock data');
       return this.getMockData(userId);
@@ -73,6 +73,8 @@ export class ReportsService {
       workHoursThisMonth: 160,
     };
   }
+
+  
 
   // private calculateWorkedDays(joinDate: Date): number {
   //   const today = new Date();

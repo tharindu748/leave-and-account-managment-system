@@ -231,10 +231,32 @@ import path from 'path';
 import { diskStorage } from 'multer';
 import fs from 'fs';
 import sharp from 'sharp';
+import { ReportsService } from '../reports/reports.service'; // Add this import
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService,
+      private readonly reportsService: ReportsService // Add this
+  ) {}
+
+  @Get(':id/dashboard')
+  async getDashboard(@Param('id', ParseIntPipe) id: number) {
+    console.log('📊 [Backend] GET /users/' + id + '/dashboard - Fetching dashboard data');
+    
+    try {
+      // ✅ USE REPORTS SERVICE INSTEAD OF HARDCODED DATA
+      const dashboardData = await this.reportsService.getEmployeeDashboardData(id);
+      
+      console.log('✅ [Backend] Dashboard data from ReportsService:', dashboardData);
+      return dashboardData;
+    } catch (error) {
+      console.error('❌ [Backend] Error fetching dashboard:', error);
+      throw new HttpException(
+        error.message || 'Failed to fetch dashboard data',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
 
   @Get()
   findAll() {
@@ -249,38 +271,38 @@ export class UsersController {
   }
 
   // ✅ ADD DASHBOARD ENDPOINT HERE
-  @Get(':id/dashboard')
-  async getDashboard(@Param('id', ParseIntPipe) id: number) {
-    console.log('📊 [Backend] GET /users/' + id + '/dashboard - Fetching dashboard data');
+  // @Get(':id/dashboard')
+  // async getDashboard(@Param('id', ParseIntPipe) id: number) {
+  //   console.log('📊 [Backend] GET /users/' + id + '/dashboard - Fetching dashboard data');
     
-    try {
-      // Get user data
-      const user = await this.usersService.findUserById(id);
+  //   try {
+  //     // Get user data
+  //     const user = await this.usersService.findUserById(id);
       
-      if (!user) {
-        throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-      }
+  //     if (!user) {
+  //       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+  //     }
 
-      console.log('👤 [Backend] User found:', user.name);
+  //     console.log('👤 [Backend] User found:', user.name);
 
-      // Get dashboard statistics
-      const stats = await this.getDashboardStats(id, user);
+  //     // Get dashboard statistics
+  //     const stats = await this.getDashboardStats(id, user);
       
-      const dashboardData = {
-        ...user,
-        ...stats
-      };
+  //     const dashboardData = {
+  //       ...user,
+  //       ...stats
+  //     };
 
-      console.log('✅ [Backend] Dashboard data prepared:', dashboardData);
-      return dashboardData;
-    } catch (error) {
-      console.error('❌ [Backend] Error fetching dashboard:', error);
-      throw new HttpException(
-        error.message || 'Failed to fetch dashboard data',
-        error.status || HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
-  }
+  //     console.log('✅ [Backend] Dashboard data prepared:', dashboardData);
+  //     return dashboardData;
+  //   } catch (error) {
+  //     console.error('❌ [Backend] Error fetching dashboard:', error);
+  //     throw new HttpException(
+  //       error.message || 'Failed to fetch dashboard data',
+  //       error.status || HttpStatus.INTERNAL_SERVER_ERROR
+  //     );
+  //   }
+  // }
 
   private async getDashboardStats(userId: number, user: any) {
     try {
