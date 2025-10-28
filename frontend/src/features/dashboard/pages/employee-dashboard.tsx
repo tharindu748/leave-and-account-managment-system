@@ -69,7 +69,7 @@ const EmployeeDashboard: React.FC = () => {
         email: userData.email,
         position: userData.position || userData.jobPosition || "Employee",
         epfNo: userData.epfNo || "N/A",
-        image: userData.imagePath, // Use imagePath from backend
+        image: userData.imagePath || null, // ✅ Use imagePath from backend
         workedSinceJoining: userData.workedSinceJoining || 0,
         totalLeaveCount: userData.totalLeaveCount || 0,
         leaveTaken: userData.leaveTaken || { sick: 0, annual: 0 },
@@ -77,7 +77,9 @@ const EmployeeDashboard: React.FC = () => {
         workHoursThisMonth: userData.workHoursThisMonth || 0
       };
       
-      setData(transformedData);
+     
+     console.log("✅ Transformed data with image:", transformedData.image);
+    setData(transformedData);
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
       const errorMessage = error.response?.data?.message || error.message || "Failed to load dashboard data";
