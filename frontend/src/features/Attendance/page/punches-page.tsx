@@ -493,211 +493,194 @@ function useIsMobile() {
   return isMobile;
 }
 
-// --- Custom Pagination Component ---
-interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  className?: string;
-}
-
-function MobileResponsivePagination({ 
+// --- Mobile UI Components ---
+function MobilePagination({ 
   currentPage, 
   totalPages, 
-  onPageChange,
-  className = "" 
-}: PaginationProps) {
-  const isMobile = useIsMobile();
+  onPageChange 
+}: { 
+  currentPage: number; 
+  totalPages: number; 
+  onPageChange: (page: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between w-full">
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      </div>
 
-  if (totalPages <= 1) return null;
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium px-2">
+          {currentPage} / {totalPages}
+        </span>
+      </div>
 
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className="h-8 w-8 p-0"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// --- Desktop UI Components ---
+function DesktopPagination({ 
+  currentPage, 
+  totalPages, 
+  onPageChange 
+}: { 
+  currentPage: number; 
+  totalPages: number; 
+  onPageChange: (page: number) => void;
+}) {
   // Generate page numbers to show
   const getPageNumbers = () => {
-    if (isMobile) {
-      // Mobile: Show current page and ellipsis if needed
-      if (totalPages <= 3) {
-        return Array.from({ length: totalPages }, (_, i) => i + 1);
-      }
-      
-      if (currentPage <= 2) {
-        return [1, 2, 3];
-      } else if (currentPage >= totalPages - 1) {
-        return [totalPages - 2, totalPages - 1, totalPages];
-      } else {
-        return [currentPage - 1, currentPage, currentPage + 1];
-      }
-    } else {
-      // Desktop: Show more pages
-      const pages = [];
-      const showPages = 5;
-      
-      let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
-      let endPage = Math.min(totalPages, startPage + showPages - 1);
-      
-      if (endPage - startPage + 1 < showPages) {
-        startPage = Math.max(1, endPage - showPages + 1);
-      }
-      
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-      
-      return pages;
+    const pages = [];
+    const showPages = 5;
+    
+    let startPage = Math.max(1, currentPage - Math.floor(showPages / 2));
+    let endPage = Math.min(totalPages, startPage + showPages - 1);
+    
+    if (endPage - startPage + 1 < showPages) {
+      startPage = Math.max(1, endPage - showPages + 1);
     }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    
+    return pages;
   };
 
   const pageNumbers = getPageNumbers();
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      {/* Mobile: Compact pagination */}
-      {isMobile ? (
-        <div className="flex items-center gap-2 w-full justify-between">
-          <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="default"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          className="h-9 px-3"
+        >
+          First
+        </Button>
+        <Button
+          variant="outline"
+          size="default"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="h-9 px-3"
+        >
+          Previous
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-1">
+        {pageNumbers[0] > 1 && (
+          <>
             <Button
               variant="outline"
-              size="sm"
+              size="default"
               onClick={() => onPageChange(1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0"
             >
-              <ChevronsLeft className="h-4 w-4" />
+              1
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <span className="text-sm text-muted-foreground px-2">
-              {currentPage} of {totalPages}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(totalPages)}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      ) : (
-        // Desktop: Full pagination
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-1">
-            {pageNumbers[0] > 1 && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPageChange(1)}
-                  className="h-8 w-8 p-0"
-                >
-                  1
-                </Button>
-                {pageNumbers[0] > 2 && (
-                  <span className="px-1 text-muted-foreground">...</span>
-                )}
-              </>
+            {pageNumbers[0] > 2 && (
+              <span className="px-1 text-muted-foreground">...</span>
             )}
-            
-            {pageNumbers.map((page) => (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                onClick={() => onPageChange(page)}
-                className="h-8 w-8 p-0"
-              >
-                {page}
-              </Button>
-            ))}
-            
-            {pageNumbers[pageNumbers.length - 1] < totalPages && (
-              <>
-                {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
-                  <span className="px-1 text-muted-foreground">...</span>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onPageChange(totalPages)}
-                  className="h-8 w-8 p-0"
-                >
-                  {totalPages}
-                </Button>
-              </>
+          </>
+        )}
+        
+        {pageNumbers.map((page) => (
+          <Button
+            key={page}
+            variant={currentPage === page ? "default" : "outline"}
+            size="default"
+            onClick={() => onPageChange(page)}
+            className="h-9 w-9 p-0"
+          >
+            {page}
+          </Button>
+        ))}
+        
+        {pageNumbers[pageNumbers.length - 1] < totalPages && (
+          <>
+            {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && (
+              <span className="px-1 text-muted-foreground">...</span>
             )}
-          </div>
-
-          <div className="flex items-center gap-1">
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+              size="default"
               onClick={() => onPageChange(totalPages)}
-              disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0"
             >
-              <ChevronsRight className="h-4 w-4" />
+              {totalPages}
             </Button>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="default"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="h-9 px-3"
+        >
+          Next
+        </Button>
+        <Button
+          variant="outline"
+          size="default"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+          className="h-9 px-3"
+        >
+          Last
+        </Button>
+      </div>
     </div>
   );
 }
 
-// --- Page Component ---
+// --- Main Page Component ---
 function PunchesPage() {
   const { user } = useAuth();
   const { setBreadcrumb } = useOutletContext<OutletContextType>();
@@ -744,7 +727,7 @@ function PunchesPage() {
 
   const fetchPunches = async () => {
     try {
-      const res = await api.get(`/punches/latest?limit=100`); // Fetch more for pagination
+      const res = await api.get(`/punches/latest?limit=100`);
       setData(res.data);
     } catch (error) {
       console.log(error);
@@ -754,13 +737,12 @@ function PunchesPage() {
   useEffect(() => {
     fetchPunches();
     setBreadcrumb(["Attendance", "Punches"]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setBreadcrumb]);
 
   const handleDelete = async (requestId: number) => {
     try {
       await api.put(`/punches/${requestId}`);
-      fetchPunches(); // Refetch data after deletion
+      fetchPunches();
     } catch (error) {
       console.error("Error approving request:", error);
     }
@@ -772,7 +754,7 @@ function PunchesPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentData = data.slice(startIndex, endIndex);
 
-  // --- Date Presets ---
+  // Date Presets
   const today = new Date();
   const presets: { label: string; range: DateRange }[] = useMemo(
     () => [
@@ -819,6 +801,204 @@ function PunchesPage() {
     setOpen(false);
   };
 
+  // --- MOBILE UI ---
+  if (isMobile) {
+    return (
+      <>
+        <PageHeader>
+          <PageHeaderTitle value="Punches" />
+          <Button onClick={() => setAddPunchToggle(true)} size="sm">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Punch
+          </Button>
+        </PageHeader>
+
+        <div className="p-4 space-y-4">
+          {/* Mobile Filter Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Search Punches</CardTitle>
+              <CardDescription>
+                Filter by employee or date
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
+                  <FormField
+                    control={form.control}
+                    name="employeeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Employee ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Employee ID" {...field} />
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Employee Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Employee name" {...field} />
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="dateRange"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date Range</FormLabel>
+                        <FormControl>
+                          <Popover open={open} onOpenChange={setOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                <span className="truncate">
+                                  {prettyLabel(field.value as DateRange | undefined)}
+                                </span>
+                                {field.value?.from && (
+                                  <X
+                                    className="ml-auto h-4 w-4 opacity-50 hover:opacity-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      field.onChange(undefined);
+                                    }}
+                                  />
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+
+                            <PopoverContent align="start" className="w-[calc(100vw-2rem)] p-0">
+                              <div className="p-3">
+                                <Calendar
+                                  initialFocus
+                                  mode="range"
+                                  numberOfMonths={1}
+                                  selected={field.value as DateRange | undefined}
+                                  onSelect={(range) => {
+                                    field.onChange(range);
+                                    if (range?.from && range?.to) {
+                                      setTimeout(() => setOpen(false), 50);
+                                    }
+                                  }}
+                                  className="rounded-md"
+                                />
+                              </div>
+                              <div className="p-3 border-t space-y-3">
+                                <div className="text-xs font-medium text-muted-foreground uppercase">
+                                  Quick presets
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  {presets.map((p) => (
+                                    <Button
+                                      key={p.label}
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      onClick={() => {
+                                        form.setValue("dateRange", p.range);
+                                        applyAndClose();
+                                      }}
+                                    >
+                                      {p.label}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </FormControl>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? "Searching..." : "Search"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+
+          {/* Mobile Results Card */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex flex-col space-y-3">
+                <div>
+                  <CardTitle className="text-lg">Punch History</CardTitle>
+                  <CardDescription>
+                    {startIndex + 1}-{Math.min(endIndex, data.length)} of {data.length}
+                  </CardDescription>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <label htmlFor="itemsPerPage" className="text-sm text-muted-foreground">
+                    Rows:
+                  </label>
+                  <select
+                    id="itemsPerPage"
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                  </select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <DataTable3 columns={columns(handleDelete)} data={currentData} />
+              
+              {/* Mobile Pagination */}
+              {totalPages > 1 && (
+                <div className="pt-4 border-t">
+                  <MobilePagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {addPunchToggle && (
+          <AddManualPunchDialog
+            open={addPunchToggle}
+            onOpenChange={setAddPunchToggle}
+            onSaved={fetchPunches}
+            currentUserId={currentUserId}
+          />
+        )}
+      </>
+    );
+  }
+
+  // --- DESKTOP UI ---
   return (
     <>
       <PageHeader>
@@ -829,9 +1009,8 @@ function PunchesPage() {
         </Button>
       </PageHeader>
 
-      {/* ✅ Added padding for mobile (p-4) and desktop (md:p-6) */}
-      <div className="p-4 md:p-6 space-y-6">
-        {/* --- Filter Card --- */}
+      <div className="p-6 space-y-6">
+        {/* Desktop Filter Card */}
         <Card>
           <CardHeader>
             <CardTitle>Search Punches</CardTitle>
@@ -843,7 +1022,7 @@ function PunchesPage() {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="flex flex-col md:flex-row md:flex-wrap md:items-end gap-4"
+                className="flex flex-row flex-wrap items-end gap-4"
               >
                 <FormField
                   control={form.control}
@@ -888,9 +1067,7 @@ function PunchesPage() {
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               <span className="truncate">
-                                {prettyLabel(
-                                  field.value as DateRange | undefined
-                                )}
+                                {prettyLabel(field.value as DateRange | undefined)}
                               </span>
                               {field.value?.from && (
                                 <X
@@ -904,32 +1081,23 @@ function PunchesPage() {
                             </Button>
                           </PopoverTrigger>
 
-                          <PopoverContent
-                            align="start"
-                            sideOffset={8}
-                            className="w-[calc(100vw-2rem)] max-w-[720px] p-0"
-                          >
-                            <div className="flex flex-col sm:flex-row sm:divide-x">
+                          <PopoverContent align="start" className="w-auto p-0">
+                            <div className="flex divide-x">
                               <div className="p-3">
                                 <Calendar
                                   initialFocus
                                   mode="range"
-                                  numberOfMonths={isMobile ? 1 : 2}
+                                  numberOfMonths={2}
                                   selected={field.value as DateRange | undefined}
-                                  onSelect={(range) => {
-                                    field.onChange(range);
-                                    if (range?.from && range?.to) {
-                                      setTimeout(() => setOpen(false), 50);
-                                    }
-                                  }}
+                                  onSelect={field.onChange}
                                   className="rounded-md"
                                 />
                               </div>
-                              <div className="w-full sm:w-[240px] p-3 space-y-3">
+                              <div className="w-[240px] p-3 space-y-3">
                                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                                   Quick presets
                                 </div>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 gap-2">
                                   {presets.map((p) => (
                                     <Button
                                       key={p.label}
@@ -945,26 +1113,6 @@ function PunchesPage() {
                                     </Button>
                                   ))}
                                 </div>
-                                <div className="flex items-center justify-between pt-2">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      form.setValue("dateRange", undefined)
-                                    }
-                                  >
-                                    Clear
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    onClick={applyAndClose}
-                                    disabled={!form.getValues().dateRange?.from}
-                                  >
-                                    Apply
-                                  </Button>
-                                </div>
                               </div>
                             </div>
                           </PopoverContent>
@@ -975,17 +1123,7 @@ function PunchesPage() {
                   )}
                 />
 
-                {form.formState.errors.root?.serverError && (
-                  <div className="w-full text-center text-xs text-destructive">
-                    {form.formState.errors.root.serverError.message}
-                  </div>
-                )}
-
-                <Button
-                  type="submit"
-                  className="w-full md:w-auto"
-                  disabled={form.formState.isSubmitting}
-                >
+                <Button type="submit" disabled={form.formState.isSubmitting}>
                   {form.formState.isSubmitting ? "Loading..." : "Search"}
                 </Button>
               </form>
@@ -993,10 +1131,10 @@ function PunchesPage() {
           </CardContent>
         </Card>
 
-        {/* --- Results Card --- */}
+        {/* Desktop Results Card */}
         <Card>
           <CardHeader>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Punch History</CardTitle>
                 <CardDescription>
@@ -1004,7 +1142,6 @@ function PunchesPage() {
                 </CardDescription>
               </div>
               
-              {/* Items per page selector */}
               <div className="flex items-center gap-2">
                 <label htmlFor="itemsPerPage" className="text-sm text-muted-foreground whitespace-nowrap">
                   Rows per page:
@@ -1029,18 +1166,17 @@ function PunchesPage() {
           <CardContent className="space-y-4">
             <DataTable3 columns={columns(handleDelete)} data={currentData} />
             
-            {/* Mobile Responsive Pagination */}
+            {/* Desktop Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
+              <div className="flex flex-row justify-between items-center gap-4 pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages}
                 </div>
                 
-                <MobileResponsivePagination
+                <DesktopPagination
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
-                  className="w-full sm:w-auto"
                 />
               </div>
             )}
@@ -1048,7 +1184,6 @@ function PunchesPage() {
         </Card>
       </div>
 
-      {/* --- Dialog --- */}
       {addPunchToggle && (
         <AddManualPunchDialog
           open={addPunchToggle}
