@@ -69,7 +69,7 @@ const EmployeeDashboard: React.FC = () => {
         email: userData.email,
         position: userData.position || userData.jobPosition || "Employee",
         epfNo: userData.epfNo || "N/A",
-        image: userData.imagePath || null, // ✅ Use imagePath from backend
+        image: userData.image ? `${userData.image}?t=${Date.now()}` : null,
         workedSinceJoining: userData.workedSinceJoining || 0,
         totalLeaveCount: userData.totalLeaveCount || 0,
         leaveTaken: userData.leaveTaken || { sick: 0, annual: 0 },
