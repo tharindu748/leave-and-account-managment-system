@@ -226,7 +226,7 @@ export default function SalaryGeneration() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const res = await axios.get("http://localhost:3000/salary/employees");
+      const res = await axios.get("https://leave-and-account-managment-system.onrender.com/salary/employees");
       setEmployees(res.data);
     } catch (error) {
       console.error("Error fetching employees:", error);
@@ -243,7 +243,7 @@ export default function SalaryGeneration() {
       if (year) params.append("year", year.toString());
 
       const res = await axios.get(
-        `http://localhost:3000/salary/period?${params}`
+        `https://leave-and-account-managment-system.onrender.com/salary/period?${params}`
       );
 
       const salaries = Array.isArray(res.data) ? res.data : res.data.data;
@@ -267,13 +267,13 @@ export default function SalaryGeneration() {
       };
 
       if (employeeId) {
-        await axios.post("http://localhost:3000/salary/generate", {
+        await axios.post("https://leave-and-account-managment-system.onrender.com/salary/generate", {
           ...generationData,
           userId: employeeId,
         });
       } else {
         const promises = employees.map((employee) =>
-          axios.post("http://localhost:3000/salary/generate", {
+          axios.post("https://leave-and-account-managment-system.onrender.com/salary/generate", {
             ...generationData,
             userId: employee.id,
           })
@@ -298,7 +298,7 @@ export default function SalaryGeneration() {
       params.append("year", selectedYear.toString());
 
       const res = await axios.get(
-        `http://localhost:3000/salary/period?${params}`,
+        `https://leave-and-account-managment-system.onrender.com/salary/period?${params}`,
         { responseType: "blob" }
       );
 

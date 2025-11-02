@@ -14,6 +14,7 @@ import { CreateUserDto } from 'src/users/dto/create-user.dto';
 @Injectable()
 export class AuthService {
   private readonly SALT_ROUNDS = 10;
+  prisma: any;
 
   constructor(
     private usersService: UsersService,
@@ -149,6 +150,19 @@ export class AuthService {
       employeeId: user.employeeId,
     };
   }
+
+  // In users.service.ts - make sure you have this method
+async update(userId: number, updateData: any) {
+  try {
+    return await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw new Error('Failed to update user');
+  }
+}
 
   async updateRefreshToken(userId: number, refreshToken: string) {
     if (!refreshToken) {
