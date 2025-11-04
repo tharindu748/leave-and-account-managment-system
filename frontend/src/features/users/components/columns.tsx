@@ -256,12 +256,12 @@ export const columns = (
   },
   { 
     accessorKey: "id",
-    header: "ID",
+    header: "Employee ID",
     size: 80,
   },
   { 
     accessorKey: "employeeId",
-    header: "Employee ID",
+    header: "ID",
     cell: ({ row }) => row.original.employeeId || "—"
   },
   { 
