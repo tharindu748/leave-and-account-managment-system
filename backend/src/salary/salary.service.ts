@@ -442,7 +442,6 @@
 //   }
 // }
 // }
-
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 
@@ -860,6 +859,8 @@ export class SalaryService {
         },
       });
 
+      // TODO: Uncomment when salaryComponent model is added to Prisma schema
+      
       // Create salary components breakdown
       await this.db.salaryComponent.createMany({
         data: [
@@ -916,6 +917,7 @@ export class SalaryService {
           },
         ],
       });
+      
 
       console.log('✅ [Service] Comprehensive salary record generated successfully');
       return { salaryRecord, calculation };
