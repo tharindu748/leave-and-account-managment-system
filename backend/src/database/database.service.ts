@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class DatabaseService extends PrismaClient implements OnModuleInit {
+  salaryComponent: any;
   async onModuleInit() {
     await this.$connect();
   }

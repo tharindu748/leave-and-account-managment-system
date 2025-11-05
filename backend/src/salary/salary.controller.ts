@@ -369,18 +369,11 @@ import {
   Delete
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { 
-  SalaryService, 
-  EmployeeSalary,
-  SalaryConfigDto,
-  SalarySetupDto,
-  EmployeeSalarySetup,
-  ComprehensiveSalaryCalculation
-} from './salary.service';
+import * as salaryService_1 from './salary.service';
 
 @Controller('salary')
 export class SalaryController {
-  constructor(private readonly salaryService: SalaryService) {}
+  constructor(private readonly salaryService: salaryService_1.SalaryService) {}
 
   // ==================== COMPREHENSIVE SALARY SETUP ENDPOINTS ====================
 
@@ -453,7 +446,7 @@ export class SalaryController {
    * POST /salary/setup - Save comprehensive salary setup
    */
   @Post('setup')
-  async saveSalarySetup(@Body() body: SalarySetupDto) {
+  async saveSalarySetup(@Body() body: salaryService_1.SalarySetupDto) {
     try {
       console.log('💾 [Controller] Saving comprehensive salary setup for user:', body.userId);
       
@@ -519,7 +512,7 @@ export class SalaryController {
   @Patch('setup/:employeeId')
   async updateSalarySetup(
     @Param('employeeId') employeeId: string,
-    @Body() body: Partial<SalarySetupDto>
+    @Body() body: Partial<salaryService_1.SalarySetupDto>
   ) {
     try {
       console.log('🔄 [Controller] Updating salary setup for employee:', employeeId);
@@ -536,7 +529,7 @@ export class SalaryController {
       }
 
       // Create new setup with merged data (this creates a new version)
-      const updatedSetup: SalarySetupDto = {
+      const updatedSetup: salaryService_1.SalarySetupDto = {
         userId: currentSetup.id,
         basicSalary: body.basicSalary ?? currentSetup.basicSalary,
         otRate: body.otRate ?? currentSetup.otRate,
@@ -705,7 +698,7 @@ export class SalaryController {
    * GET /salary/employees - Get all employees with basic salary configs
    */
   @Get('employees')
-  async getEmployees(): Promise<EmployeeSalary[]> {
+  async getEmployees(): Promise<salaryService_1.EmployeeSalary[]> {
     try {
       console.log('📋 [Controller] Fetching employees with basic salary config...');
       
@@ -742,7 +735,7 @@ export class SalaryController {
    * POST /salary/config - Save basic salary configuration
    */
   @Post('config')
-  async saveSalary(@Body() body: SalaryConfigDto) {
+  async saveSalary(@Body() body: salaryService_1.SalaryConfigDto) {
     try {
       if (!body.userId || body.basicSalary === undefined) {
         throw new HttpException(
